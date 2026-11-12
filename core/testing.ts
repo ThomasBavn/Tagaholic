@@ -1,9 +1,20 @@
 import type { Clock, FileStore, Ports, Store, TagSource } from "./ports";
 
-/** A Tag source for tests. It never touches the network. */
+/** A Tag source for tests. It never touches the network: it serves a canned XML response. */
 export class TestTagSource implements TagSource {
-    async query(): Promise<string> {
-        throw new Error("TestTagSource has no responses configured");
+    readonly queries: Record<string, string>[] = [];
+    private response: string | null = null;
+
+    respondWith(xml: string): void {
+        this.response = xml;
+    }
+
+    async query(params: Record<string, string>): Promise<string> {
+        this.queries.push(params);
+        if (this.response === null) {
+            throw new Error("TestTagSource has no response configured");
+        }
+        return this.response;
     }
 }
 
