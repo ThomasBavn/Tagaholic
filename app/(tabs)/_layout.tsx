@@ -31,33 +31,33 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: "Home",
-                    tabBarIcon: ({ color }) => (
-                        <IconSymbol size={28} name="house.fill" color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="search"
-                options={{
                     title: "Search",
                     tabBarIcon: ({ color }) => (
                         <IconSymbol
                             size={28}
-                            name={"magnifyingglass.circle.fill"}
+                            name="magnifyingglass.circle.fill"
                             color={color}
                         />
                     ),
                 }}
             />
             <Tabs.Screen
-                name="explore"
+                name="folders"
                 options={{
-                    title: "Tags",
+                    title: "Folders",
+                    tabBarIcon: ({ color }) => (
+                        <IconSymbol size={28} name="folder.fill" color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="repertoire"
+                options={{
+                    title: "Repertoire",
                     tabBarIcon: ({ color }) => (
                         <IconSymbol
                             size={28}
-                            name="paperplane.fill"
+                            name="music.note.list"
                             color={color}
                         />
                     ),
