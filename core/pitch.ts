@@ -30,7 +30,16 @@ export function readPitch(key: string | null): Pitch | null {
 }
 
 /** How far the Singer can transpose a Pitch, in semitones either way: just short of an octave. */
-export const TRANSPOSE_LIMIT = 11;
+const TRANSPOSE_LIMIT = 11;
+
+/**
+ * The Transposition moved a semitone up (step 1) or down (step -1). A step past the limit
+ * rolls over to 0: an octave from the Key sounds the Key's own note again.
+ */
+export function stepTransposition(semitones: number, step: 1 | -1): number {
+    const next = semitones + step;
+    return Math.abs(next) > TRANSPOSE_LIMIT ? 0 : next;
+}
 
 /** Tonic spellings by semitone above C. */
 const FLATS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];

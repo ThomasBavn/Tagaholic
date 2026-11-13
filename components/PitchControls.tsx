@@ -4,11 +4,15 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { PitchButton } from "@/components/PitchButton";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
-import { TRANSPOSE_LIMIT, type Pitch } from "@/core";
+import { stepTransposition, type Pitch } from "@/core";
+
+/** The group's height, and the width of each square transpose button. */
+const HEIGHT = 36;
 
 /**
- * The Pitch button between buttons that transpose it down and up a semitone. The
- * Transposition starts at 0 each time the Tag page opens: it isn't remembered.
+ * The Pitch button between buttons that transpose it down and up a semitone. Stepping past
+ * ±11 rolls the Transposition over to 0. It starts at 0 each time the Tag page opens: it
+ * isn't remembered.
  */
 export function PitchControls({ pitch }: { pitch: Pitch }) {
     const [semitones, setSemitones] = useState(0);
@@ -18,15 +22,15 @@ export function PitchControls({ pitch }: { pitch: Pitch }) {
             <TransposeButton
                 icon="chevron.down"
                 label="Lower Pitch a semitone"
-                disabled={semitones <= -TRANSPOSE_LIMIT}
-                onPress={() => setSemitones((current) => Math.max(current - 1, -TRANSPOSE_LIMIT))}
+                onPress={() => setSemitones((current) => stepTransposition(current, -1))}
             />
+            <View style={styles.divider} />
             <PitchButton pitch={pitch} semitones={semitones} />
+            <View style={styles.divider} />
             <TransposeButton
                 icon="chevron.up"
                 label="Raise Pitch a semitone"
-                disabled={semitones >= TRANSPOSE_LIMIT}
-                onPress={() => setSemitones((current) => Math.min(current + 1, TRANSPOSE_LIMIT))}
+                onPress={() => setSemitones((current) => stepTransposition(current, 1))}
             />
         </View>
     );
@@ -35,28 +39,20 @@ export function PitchControls({ pitch }: { pitch: Pitch }) {
 function TransposeButton({
     icon,
     label,
-    disabled,
     onPress,
 }: {
     icon: "chevron.down" | "chevron.up";
     label: string;
-    disabled: boolean;
     onPress: () => void;
 }) {
     return (
         <Pressable
-            style={({ pressed }) => [
-                styles.transpose,
-                pressed && styles.pressed,
-                disabled && styles.disabled,
-            ]}
+            style={({ pressed }) => [styles.transpose, pressed && styles.pressed]}
             onPress={onPress}
-            disabled={disabled}
             accessibilityRole="button"
             accessibilityLabel={label}
-            accessibilityState={{ disabled }}
         >
-            <IconSymbol name={icon} size={24} color="#fff" />
+            <IconSymbol name={icon} size={22} color="#fff" />
         </Pressable>
     );
 }
@@ -64,22 +60,24 @@ function TransposeButton({
 const styles = StyleSheet.create({
     group: {
         flexDirection: "row",
-        borderRadius: 24,
+        height: HEIGHT,
+        borderRadius: 8,
         overflow: "hidden",
         backgroundColor: Colors.light.tint,
         // Lifts the group off the sheet music it floats over.
         elevation: 4,
         boxShadow: "0 2px 6px rgba(0, 0, 0, 0.3)",
     },
+    divider: {
+        width: 1,
+        backgroundColor: "rgba(255, 255, 255, 0.4)",
+    },
     transpose: {
+        width: HEIGHT,
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 12,
     },
     pressed: {
         opacity: 0.7,
-    },
-    disabled: {
-        opacity: 0.4,
     },
 });

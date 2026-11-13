@@ -86,11 +86,10 @@ function describeTransposition(semitones: number): string {
 
 const styles = StyleSheet.create({
     button: {
-        minWidth: 88,
+        minWidth: 80,
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
     },
     pressed: {
         opacity: 0.7,

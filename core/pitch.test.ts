@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { createCore, transposePitch } from "@/core";
+import { createCore, stepTransposition, transposePitch } from "@/core";
 import { createTestPorts } from "@/core/testing";
 
 const fixture = (name: string) =>
@@ -133,5 +133,18 @@ describe("Transposing a Pitch", () => {
 
         expect(transposePitch(gFlatMajor, 0)).toEqual(gFlatMajor);
         expect(transposePitch(cFlatMajor, 0)).toEqual(cFlatMajor);
+    });
+});
+
+describe("Stepping the Transposition a semitone", () => {
+    it("moves one semitone up or down", () => {
+        expect(stepTransposition(0, 1)).toBe(1);
+        expect(stepTransposition(0, -1)).toBe(-1);
+        expect(stepTransposition(-5, 1)).toBe(-4);
+    });
+
+    it("rolls over to 0 past +11 and past −11, an octave away from the Key", () => {
+        expect(stepTransposition(11, 1)).toBe(0);
+        expect(stepTransposition(-11, -1)).toBe(0);
     });
 });
