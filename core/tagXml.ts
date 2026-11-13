@@ -1,5 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 
+import { readPitch, type Pitch } from "./pitch";
+
 /** A Tag as it appears in search results. */
 export interface TagSummary {
     id: number;
@@ -37,6 +39,8 @@ export interface Tag {
     altTitle: string | null;
     /** The Key as barbershoptags.com writes it, e.g. "Major:Gb", or null when the Tag has none. */
     key: string | null;
+    /** The tonic to sound before singing, or null when the Key is missing or can't be read. */
+    pitch: Pitch | null;
     parts: number;
     lyrics: string | null;
     /** Null when barbershoptags.com has no sheet music for the Tag, or only in a format the app can't show. */
@@ -60,12 +64,14 @@ export function parseTagResponse(xml: string): Tag | null {
     const [tag] = (parser.parse(xml).tags.tag ?? []) as Record<string, unknown>[];
     if (!tag) return null;
     const text = (field: unknown) => (typeof field === "string" && field ? field : null);
+    const key = text(tag.WritKey);
 
     return {
         id: Number(tag.id),
         title: String(tag.Title),
         altTitle: text(tag.AltTitle),
-        key: text(tag.WritKey),
+        key,
+        pitch: readPitch(key),
         parts: Number(tag.Parts),
         lyrics: text(tag.Lyrics),
         sheetMusic: readSheetMusic(tag.SheetMusic),

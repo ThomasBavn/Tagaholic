@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
+import { PitchButton } from "@/components/PitchButton";
 import { SheetMusicViewer } from "@/components/SheetMusicViewer";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -39,6 +40,11 @@ export default function TagScreen() {
                     This Tag couldn&apos;t be opened. Please try again.
                 </ThemedText>
             )}
+            {tag?.pitch && (
+                <View style={styles.toolbar}>
+                    <PitchButton pitch={tag.pitch} />
+                </View>
+            )}
             {tag && <SheetMusicViewer sheetMusic={tag.sheetMusic} />}
         </ThemedView>
     );
@@ -50,5 +56,9 @@ const styles = StyleSheet.create({
     },
     status: {
         padding: 16,
+    },
+    toolbar: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
     },
 });
