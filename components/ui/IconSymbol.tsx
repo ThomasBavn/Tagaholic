@@ -5,8 +5,9 @@ import { SymbolViewProps, SymbolWeight } from "expo-symbols";
 import { ComponentProps } from "react";
 import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 
+// SymbolViewProps["name"] also allows a per-platform object; only plain SF Symbol names are mapped.
 type IconMapping = Record<
-    SymbolViewProps["name"],
+    Extract<SymbolViewProps["name"], string>,
     ComponentProps<typeof MaterialIcons>["name"]
 >;
 type IconSymbolName = keyof typeof MAPPING;
