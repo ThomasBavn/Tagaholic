@@ -38,6 +38,8 @@ export function PitchButton({ pitch }: { pitch: Pitch }) {
     const label = `${pitch.tonic} ${pitch.tonality}`;
 
     useEffect(() => {
+        // expo-audio has no loop option on creation; setting the property is its documented API.
+        // eslint-disable-next-line react-hooks/immutability
         player.loop = true;
     }, [player]);
 
