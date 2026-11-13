@@ -4,13 +4,22 @@ import type { Clock, FileStore, Ports, Store, TagSource } from "./ports";
 export class TestTagSource implements TagSource {
     readonly queries: Record<string, string>[] = [];
     private response: string | null = null;
+    private failure: Error | null = null;
 
     respondWith(xml: string): void {
         this.response = xml;
     }
 
+    /** Makes every query fail, as when the phone is offline or barbershoptags.com is down. */
+    failWith(error: Error): void {
+        this.failure = error;
+    }
+
     async query(params: Record<string, string>): Promise<string> {
         this.queries.push(params);
+        if (this.failure !== null) {
+            throw this.failure;
+        }
         if (this.response === null) {
             throw new Error("TestTagSource has no response configured");
         }
