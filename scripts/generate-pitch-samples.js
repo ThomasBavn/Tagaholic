@@ -1,7 +1,10 @@
 /**
- * Generates the bundled Pitch samples in assets/audio/pitch: one short, reedy note per
- * tonic, like a chromatic pitch pipe, from F3 up to E4. The app plays these files and
- * never synthesises sound itself, so the Pitch button works offline.
+ * Generates the bundled Pitch samples in assets/audio/pitch: one reedy note per tonic,
+ * like a chromatic pitch pipe, from F3 up to E4. The app plays these files and never
+ * synthesises sound itself, so the Pitch button works offline.
+ *
+ * Each sample is a steady note that loops seamlessly, so the app can sound it for as long
+ * as the Singer holds the Pitch button.
  *
  * Run with `node scripts/generate-pitch-samples.js` after changing the sound.
  */
@@ -9,11 +12,18 @@ const fs = require("fs");
 const path = require("path");
 
 const OUT_DIR = path.join(__dirname, "..", "assets", "audio", "pitch");
-const SAMPLE_RATE = 22050;
-const ATTACK = 0.04;
-const HOLD = 1.3;
-const RELEASE = 0.2;
+/** Ample for these notes: their highest harmonic is under 2.7 kHz. */
+const SAMPLE_RATE = 11025;
+/**
+ * The loop length. Every wave in the note completes a whole number of cycles in it, so the
+ * end runs straight back into the start. It is long because expo-audio on iOS (and some
+ * browsers) loop by restarting the file, with a tiny gap: most held notes never reach it.
+ * A longer loop also keeps the note closer to true pitch.
+ */
+const LOOP_SECONDS = 10;
 const VOLUME = 0.6;
+/** A slight, slow vibrato keeps the tone from sounding electronic. Whole cycles per loop. */
+const VIBRATO_HZ = 5;
 
 /**
  * File names by semitone above C. "s" stands for sharp, since "#" is awkward in asset paths.
@@ -30,26 +40,27 @@ function frequency(semitone) {
     return 440 * 2 ** ((midi - 69) / 12);
 }
 
-function envelope(t) {
-    if (t < ATTACK) return t / ATTACK;
-    if (t < ATTACK + HOLD) return 1;
-    return Math.max(0, 1 - (t - ATTACK - HOLD) / RELEASE);
+/**
+ * The frequency the sample actually sounds: the true note, nudged to a whole number of
+ * cycles per loop so it loops seamlessly. The nudge is at most 1/20 Hz, under 1 cent.
+ */
+function loopedFrequency(semitone) {
+    return Math.round(frequency(semitone) * LOOP_SECONDS) / LOOP_SECONDS;
 }
 
 function render(semitone) {
-    const f = frequency(semitone);
-    const length = Math.round((ATTACK + HOLD + RELEASE) * SAMPLE_RATE);
+    const f = loopedFrequency(semitone);
+    const length = LOOP_SECONDS * SAMPLE_RATE;
     const total = HARMONICS.reduce((sum, a) => sum + a, 0);
     const samples = new Int16Array(length);
     for (let i = 0; i < length; i++) {
         const t = i / SAMPLE_RATE;
-        // A slight, slow vibrato keeps the tone from sounding electronic.
-        const phase = 2 * Math.PI * f * t + 0.02 * Math.sin(2 * Math.PI * 5 * t);
+        const phase = 2 * Math.PI * f * t + 0.02 * Math.sin(2 * Math.PI * VIBRATO_HZ * t);
         let value = 0;
         HARMONICS.forEach((amplitude, n) => {
             value += amplitude * Math.sin((n + 1) * phase);
         });
-        samples[i] = Math.round((value / total) * envelope(t) * VOLUME * 32767);
+        samples[i] = Math.round((value / total) * VOLUME * 32767);
     }
     return samples;
 }
@@ -73,9 +84,15 @@ function wav(samples) {
     return Buffer.concat([header, Buffer.from(samples.buffer)]);
 }
 
-fs.mkdirSync(OUT_DIR, { recursive: true });
-NAMES.forEach((name, semitone) => {
-    const file = path.join(OUT_DIR, `${String(semitone).padStart(2, "0")}-${name}.wav`);
-    fs.writeFileSync(file, wav(render(semitone)));
-    console.log(`${path.relative(process.cwd(), file)}  ${frequency(semitone).toFixed(2)} Hz`);
-});
+function main() {
+    fs.mkdirSync(OUT_DIR, { recursive: true });
+    NAMES.forEach((name, semitone) => {
+        const file = path.join(OUT_DIR, `${String(semitone).padStart(2, "0")}-${name}.wav`);
+        fs.writeFileSync(file, wav(render(semitone)));
+        console.log(`${path.relative(process.cwd(), file)}  ${loopedFrequency(semitone).toFixed(2)} Hz`);
+    });
+}
+
+if (require.main === module) main();
+
+module.exports = { loopedFrequency, render };

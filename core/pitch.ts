@@ -1,4 +1,4 @@
-/** The tonic of a Tag's Key, to sound once like a pitch pipe before singing. */
+/** The tonic of a Tag's Key, to sound like a pitch pipe while the Singer holds the Pitch button. */
 export interface Pitch {
     tonality: "major" | "minor";
     /** The tonic as the Key spells it, e.g. "Gb" or "F#". */
