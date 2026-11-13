@@ -1,3 +1,4 @@
+import { Link } from "expo-router";
 import { useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -9,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { formatKey } from "@/components/formatKey";
 import { SearchOptions } from "@/components/SearchOptions";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -22,21 +24,16 @@ import {
 } from "@/core";
 import { core } from "@/core/app";
 
-/** "Major:Gb" → "Gb major". */
-function formatKey(key: string | null): string {
-    if (!key) return "No Key";
-    const [tonality, tonic] = key.split(":");
-    return tonic ? `${tonic} ${tonality.toLowerCase()}` : key;
-}
-
 function TagRow({ tag }: { tag: TagSummary }) {
     return (
-        <View style={styles.row}>
-            <ThemedText type="defaultSemiBold">{tag.title}</ThemedText>
-            <ThemedText style={styles.details}>
-                {formatKey(tag.key)} · {tag.parts} parts · ★ {tag.rating.toFixed(1)}
-            </ThemedText>
-        </View>
+        <Link href={{ pathname: "/tag/[id]", params: { id: tag.id } }} asChild>
+            <Pressable style={styles.row} accessibilityRole="link">
+                <ThemedText type="defaultSemiBold">{tag.title}</ThemedText>
+                <ThemedText style={styles.details}>
+                    {formatKey(tag.key)} · {tag.parts} parts · ★ {tag.rating.toFixed(1)}
+                </ThemedText>
+            </Pressable>
+        </Link>
     );
 }
 
