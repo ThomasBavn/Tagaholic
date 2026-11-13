@@ -1,13 +1,11 @@
 import type { Ports } from "./ports";
+import { searchQuery, SearchFailedError, type SearchRequest } from "./search";
 import { parseSearchResponse, parseTagResponse, type SearchResult, type Tag } from "./tagXml";
 
 export type { Clock, FileStore, Ports, Store, TagSource } from "./ports";
 export type { SearchResult, SheetMusic, Tag, TagSummary } from "./tagXml";
-
-export interface SearchRequest {
-    /** Free text, matched against titles and lyrics by barbershoptags.com. */
-    text: string;
-}
+export { hasNextPage, SEARCH_PAGE_SIZE, SearchFailedError } from "./search";
+export type { PartCount, SearchOrder, SearchRequest } from "./search";
 
 /** A Tag saved on the device when it was opened. */
 export interface CachedTag {
@@ -29,14 +27,14 @@ const cacheKey = (id: number) => `tag:${id}`;
 
 export function createCore({ tagSource, store, clock }: Ports): Core {
     return {
-        async search({ text }) {
-            const xml = await tagSource.query({
-                q: text,
-                Parts: "4",
-                fldlist: "id,Title,WritKey,Parts,Rating",
-                client: "Tagaholic",
-            });
-            return parseSearchResponse(xml);
+        async search(request) {
+            // Outside the try: a bad request is a bug in the app, not a failed search.
+            const query = searchQuery(request);
+            try {
+                return parseSearchResponse(await tagSource.query(query));
+            } catch (cause) {
+                throw new SearchFailedError(cause);
+            }
         },
 
         async openTag(id) {

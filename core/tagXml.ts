@@ -74,10 +74,14 @@ export function parseTagResponse(xml: string): Tag | null {
 
 /** Reads a barbershoptags.com search response. */
 export function parseSearchResponse(xml: string): SearchResult {
-    const root = parser.parse(xml).tags;
+    const root = parser.parse(xml)?.tags;
+    const available = Number(root?.["@available"]);
+    if (typeof root !== "object" || !Number.isInteger(available)) {
+        throw new Error("Not a barbershoptags.com search response");
+    }
 
     return {
-        available: Number(root["@available"]),
+        available,
         tags: (root.tag ?? []).map(
             (tag: Record<string, string>): TagSummary => ({
                 id: Number(tag.id),
