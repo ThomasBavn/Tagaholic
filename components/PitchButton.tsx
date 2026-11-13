@@ -3,6 +3,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { Pressable, StyleSheet } from "react-native";
 
+import { formatTonic, speakTonic } from "@/components/formatKey";
 import { ThemedText } from "@/components/ThemedText";
 import { transposePitch, type Pitch } from "@/core";
 
@@ -61,11 +62,11 @@ export function PitchButton({ pitch: keyPitch, semitones }: { pitch: Pitch; semi
             }}
             onPressOut={() => player.pause()}
             accessibilityRole="button"
-            accessibilityLabel={`Pitch: ${pitch.tonic}, ${describeTransposition(semitones)}`}
+            accessibilityLabel={`Pitch: ${speakTonic(pitch.tonic)}, ${describeTransposition(semitones)}`}
             accessibilityHint="Sounds the note while held"
         >
             <ThemedText style={styles.text}>
-                {pitch.tonic} <ThemedText style={styles.transposition}>({formatTransposition(semitones)})</ThemedText>
+                {formatTonic(pitch.tonic)} <ThemedText style={styles.transposition}>({formatTransposition(semitones)})</ThemedText>
             </ThemedText>
         </Pressable>
     );
