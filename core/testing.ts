@@ -52,10 +52,14 @@ export class InMemoryFileStore implements FileStore {
 
 /** A clock that stands still unless a test moves it. */
 export class TestClock implements Clock {
-    constructor(private readonly time = Date.UTC(2026, 0, 1)) {}
+    constructor(private time = Date.UTC(2026, 0, 1)) {}
 
     now(): number {
         return this.time;
+    }
+
+    set(time: number): void {
+        this.time = time;
     }
 }
 

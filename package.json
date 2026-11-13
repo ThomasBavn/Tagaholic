@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "@expo/vector-icons": "^14.1.0",
+        "@likashefqet/react-native-image-zoom": "^4.3.0",
         "@react-native-async-storage/async-storage": "^2.1.2",
         "@react-navigation/bottom-tabs": "^7.3.10",
         "@react-navigation/elements": "^2.3.8",
@@ -35,7 +36,9 @@
         "react": "19.0.0",
         "react-dom": "19.0.0",
         "react-native": "0.79.2",
+        "react-native-blob-util": "^0.25.3",
         "react-native-gesture-handler": "~2.24.0",
+        "react-native-pdf": "^7.0.5",
         "react-native-reanimated": "~3.17.4",
         "react-native-safe-area-context": "5.4.0",
         "react-native-screens": "~4.10.0",
@@ -44,6 +47,8 @@
     },
     "devDependencies": {
         "@babel/core": "^7.25.2",
+        "@config-plugins/react-native-blob-util": "^11.0.0",
+        "@config-plugins/react-native-pdf": "^11.0.0",
         "@types/jest": "^29.5.14",
         "@types/node": "^22.15.17",
         "@types/react": "~19.0.10",
@@ -58,7 +63,8 @@
         "preset": "jest-expo",
         "testPathIgnorePatterns": [
             "/node_modules/",
-            "/android/"
+            "/android/",
+            "/.claude/"
         ]
     }
 }
