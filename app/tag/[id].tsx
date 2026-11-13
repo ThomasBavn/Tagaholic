@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PitchButton } from "@/components/PitchButton";
+import { PitchControls } from "@/components/PitchControls";
 import { SheetMusicViewer } from "@/components/SheetMusicViewer";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -55,7 +55,7 @@ export default function TagScreen() {
                         { bottom: insets.bottom + 16, left: insets.left + 16 },
                     ]}
                 >
-                    <PitchButton pitch={tag.pitch} />
+                    <PitchControls key={id} pitch={tag.pitch} />
                 </View>
             )}
         </ThemedView>

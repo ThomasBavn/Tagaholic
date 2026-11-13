@@ -19,6 +19,8 @@ type IconSymbolName = keyof typeof MAPPING;
  */
 const MAPPING = {
     "chevron.right": "chevron-right",
+    "chevron.down": "keyboard-arrow-down",
+    "chevron.up": "keyboard-arrow-up",
     "magnifyingglass.circle.fill": "search",
     "folder.fill": "folder",
     "music.note.list": "library-music",

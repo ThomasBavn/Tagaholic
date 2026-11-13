@@ -4,6 +4,7 @@ import { parseSearchResponse, parseTagResponse, type SearchResult, type Tag } fr
 
 export type { Clock, FileStore, Ports, Store, TagSource } from "./ports";
 export type { Pitch } from "./pitch";
+export { justIntonationCents, stepTransposition, transposePitch } from "./pitch";
 export type { SearchResult, SheetMusic, Tag, TagSummary } from "./tagXml";
 export { hasNextPage, SEARCH_PAGE_SIZE, SearchFailedError } from "./search";
 export type { PartCount, SearchOrder, SearchRequest } from "./search";

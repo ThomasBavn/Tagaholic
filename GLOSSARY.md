@@ -21,8 +21,12 @@ The tonality and tonic a Tag is written in, such as G-flat major.
 _Avoid_: WritKey
 
 **Pitch**:
-The tonic note of a Tag's Key, sounded for as long as the Singer holds the Pitch button, as a pitch pipe sounds for as long as it is blown, to set the Key before singing.
+The tonic note of a Tag's Key, sounded for as long as the Singer holds the Pitch button, as a pitch pipe sounds for as long as it is blown, to set the Key before singing. When the Singer transposes it, the Pitch is the tonic of the key they will sing in.
 _Avoid_: Starting note, key note
+
+**Transposition**:
+How many semitones the Singer has moved the Pitch up or down from the Tag's Key, up to 11 either way, to sing the Tag in another key. Stepping past 11 rolls it over to 0, an octave from the Key. It starts at 0 each time the Tag is opened. A transposed Pitch is tuned in just intonation: a pure interval from the Key's tonic, which stays at standard pitch.
+_Avoid_: Offset, shift, capo
 
 ## Keeping track
 

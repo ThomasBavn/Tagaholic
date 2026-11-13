@@ -28,3 +28,50 @@ export function readPitch(key: string | null): Pitch | null {
         semitone: (NATURALS[natural] + ACCIDENTALS[accidental] + 12) % 12,
     };
 }
+
+/** How far the Singer can transpose a Pitch, in semitones either way: just short of an octave. */
+const TRANSPOSE_LIMIT = 11;
+
+/**
+ * The Transposition moved a semitone up (step 1) or down (step -1). A step past the limit
+ * rolls over to 0: an octave from the Key sounds the Key's own note again.
+ */
+export function stepTransposition(semitones: number, step: 1 | -1): number {
+    const next = semitones + step;
+    return Math.abs(next) > TRANSPOSE_LIMIT ? 0 : next;
+}
+
+/** Tonic spellings by semitone above C. */
+const FLATS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+/**
+ * The Pitch moved by a number of semitones, up when positive and down when negative.
+ * The new tonic is spelled the way the Key leans: with flats when the Key's tonic is flat,
+ * otherwise with sharps.
+ */
+export function transposePitch(pitch: Pitch, semitones: number): Pitch {
+    if (semitones === 0) return pitch;
+    const semitone = (((pitch.semitone + semitones) % 12) + 12) % 12;
+    const spellings = pitch.tonic.endsWith("b") ? FLATS : SHARPS;
+    return { ...pitch, tonic: spellings[semitone], semitone };
+}
+
+/**
+ * Pure (5-limit just) intervals above the Key's tonic, by semitones up: unison, minor second,
+ * major second, minor third, major third, fourth, tritone, fifth, minor sixth, major sixth,
+ * minor seventh and major seventh.
+ */
+const JUST_RATIOS = [1, 16 / 15, 9 / 8, 6 / 5, 5 / 4, 4 / 3, 45 / 32, 3 / 2, 8 / 5, 5 / 3, 9 / 5, 15 / 8];
+
+/**
+ * How many cents a transposed Pitch sits off equal temperament when tuned as a pure interval
+ * from the Key's tonic, which itself stays at standard pitch. A downward Transposition is
+ * the same pure interval below the tonic.
+ */
+export function justIntonationCents(semitones: number): number {
+    if (semitones === 0) return 0;
+    const steps = Math.abs(semitones) % 12;
+    const intervalCents = 1200 * Math.log2(JUST_RATIOS[steps]) - 100 * steps;
+    return semitones > 0 ? intervalCents : -intervalCents;
+}
