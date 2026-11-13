@@ -20,4 +20,4 @@ Remove `backend/`. The app calls the barbershoptags.com API directly, parses the
 
 - There's no server to host, and no LAN IP to configure.
 - The app must send `client=Tagaholic` itself and follow the API's terms of use.
-- If barbershoptags.com ever needs an API key or blocks cross-origin requests, or if accounts and sync arrive (backed by Supabase), this decision should be revisited.
+- If barbershoptags.com ever needs an API key or blocks cross-origin requests, or if accounts and sync across devices arrive, this decision should be revisited.
