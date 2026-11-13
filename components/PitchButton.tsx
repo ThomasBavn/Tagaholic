@@ -1,7 +1,7 @@
-import { useAudioPlayer, type AudioPlayer } from "expo-audio";
+import { useAudioPlayer } from "expo-audio";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef } from "react";
-import { Platform, Pressable, StyleSheet } from "react-native";
+import { useCallback, useEffect } from "react";
+import { Pressable, StyleSheet } from "react-native";
 
 import {
     describeTransposition,
@@ -44,25 +44,23 @@ const SAMPLES = [
 export function PitchButton({ pitch: keyPitch, transposition }: { pitch: Pitch; transposition: number }) {
     const pitch = transposePitch(keyPitch, transposition);
     const player = useAudioPlayer(SAMPLES[pitch.semitone]);
-    const held = useRef(false);
 
-    // iOS loops a sample by restarting it at normal speed, which would drop the just-intonation
-    // detune after the first pass. So there the button restarts it instead, at the tuned speed.
+    // Loop the steady sample for as long as the button is held, and tune it: play it a few cents
+    // faster or slower, with pitch correction off so the pitch follows the speed (varispeed on
+    // iOS). expo-audio 58 keeps both the speed and the tuning when a sample loops.
     useEffect(() => {
-        if (!LOOPS_BY_RESTARTING) return;
-        const subscription = player.addListener("playbackStatusUpdate", (status) => {
-            if (status.didJustFinish && held.current) {
-                player.seekTo(0).then(() => player.play(), console.error);
-            }
-        });
-        return () => subscription.remove();
-    }, [player]);
+        // expo-audio has no loop or pitch options on creation; setting the properties is its
+        // documented API.
+        // eslint-disable-next-line react-hooks/immutability
+        player.loop = true;
+        player.shouldCorrectPitch = false;
+        player.setPlaybackRate(2 ** (justIntonationCents(transposition) / 1200));
+    }, [player, transposition]);
 
     // Leaving the Tag page mid-note stops the note.
     useFocusEffect(
         useCallback(
             () => () => {
-                held.current = false;
                 try {
                     player.pause();
                 } catch {
@@ -76,17 +74,8 @@ export function PitchButton({ pitch: keyPitch, transposition }: { pitch: Pitch; 
     return (
         <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-            onPressIn={() => {
-                held.current = true;
-                // Set on every press, as transposing swaps in a fresh player.
-                player.loop = !LOOPS_BY_RESTARTING;
-                tune(player, justIntonationCents(transposition));
-                player.play();
-            }}
-            onPressOut={() => {
-                held.current = false;
-                player.pause();
-            }}
+            onPressIn={() => player.play()}
+            onPressOut={() => player.pause()}
             accessibilityRole="button"
             accessibilityLabel={`Pitch: ${speakTonic(pitch.tonic)}, ${describeTransposition(transposition)}`}
             accessibilityHint="Sounds the note while held"
@@ -97,24 +86,6 @@ export function PitchButton({ pitch: keyPitch, transposition }: { pitch: Pitch; 
             </ThemedText>
         </Pressable>
     );
-}
-
-/**
- * expo-audio 0.4.5 on iOS loops by restarting the sample with AVPlayer's play(), which plays
- * at normal speed. On Android and web looping keeps the speed.
- */
-const LOOPS_BY_RESTARTING = Platform.OS === "ios";
-
-/**
- * Detunes the equal-tempered sample by some cents, by playing it a little faster or slower.
- * Only at the moment of playing: on iOS, setting the rate also starts playback.
- */
-function tune(player: AudioPlayer, cents: number) {
-    // iOS keeps the pitch when the rate changes unless pitch correction is on and set to
-    // "medium", which expo-audio maps to varispeed: the pitch follows the rate. On Android
-    // and web the pitch follows the rate as long as pitch correction stays off.
-    if (Platform.OS === "ios") player.shouldCorrectPitch = true;
-    player.setPlaybackRate(2 ** (cents / 1200), "medium");
 }
 
 const styles = StyleSheet.create({

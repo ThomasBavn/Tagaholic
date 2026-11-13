@@ -13,23 +13,27 @@ import { core } from "@/core/app";
 /** The Tag page: a stack screen any tab can open with `/tag/<id>`. */
 export default function TagScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const [tag, setTag] = useState<Tag | null>(null);
-    const [failed, setFailed] = useState(false);
+    // The outcome remembers which id it belongs to, so a new id shows the
+    // spinner again without resetting state inside the effect.
+    const [outcome, setOutcome] = useState<
+        { id: string; tag: Tag } | { id: string; failed: true } | null
+    >(null);
+    const current = outcome?.id === id ? outcome : null;
+    const tag = current && "tag" in current ? current.tag : null;
+    const failed = current !== null && "failed" in current;
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
-        let current = true;
-        setTag(null);
-        setFailed(false);
+        let active = true;
         core.openTag(Number(id)).then(
-            (opened) => current && setTag(opened),
+            (opened) => active && setOutcome({ id, tag: opened }),
             (error) => {
                 console.error(error);
-                if (current) setFailed(true);
+                if (active) setOutcome({ id, failed: true });
             },
         );
         return () => {
-            current = false;
+            active = false;
         };
     }, [id]);
 
