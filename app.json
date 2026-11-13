@@ -17,6 +17,7 @@
                 "backgroundColor": "#ffffff"
             },
             "edgeToEdgeEnabled": true,
+            "blockedPermissions": ["android.permission.RECORD_AUDIO"],
             "package": "com.anonymous.Tagaholic"
         },
         "web": {

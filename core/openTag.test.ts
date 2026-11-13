@@ -23,6 +23,7 @@ describe("Opening a Tag", () => {
             title: "A Million Stars",
             altTitle: null,
             key: "Major:Gb",
+            pitch: { tonality: "major", tonic: "Gb", semitone: 6 },
             parts: 4,
             lyrics: "There's a million stars in the skies. None shine brighter than your eyes.",
             sheetMusic: { url: sheetMusicUrl(2462), format: "image" },

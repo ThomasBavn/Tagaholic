@@ -3,6 +3,7 @@ import { searchQuery, SearchFailedError, type SearchRequest } from "./search";
 import { parseSearchResponse, parseTagResponse, type SearchResult, type Tag } from "./tagXml";
 
 export type { Clock, FileStore, Ports, Store, TagSource } from "./ports";
+export type { Pitch } from "./pitch";
 export type { SearchResult, SheetMusic, Tag, TagSummary } from "./tagXml";
 export { hasNextPage, SEARCH_PAGE_SIZE, SearchFailedError } from "./search";
 export type { PartCount, SearchOrder, SearchRequest } from "./search";
