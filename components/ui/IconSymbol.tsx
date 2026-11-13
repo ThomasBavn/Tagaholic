@@ -3,7 +3,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SymbolViewProps, SymbolWeight } from "expo-symbols";
 import { ComponentProps } from "react";
-import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
+import { type ColorValue, type StyleProp, type TextStyle } from "react-native";
 
 // SymbolViewProps["name"] also allows a per-platform object; only plain SF Symbol names are mapped.
 type IconMapping = Record<
@@ -37,13 +37,14 @@ export function IconSymbol({
 }: {
     name: IconSymbolName;
     size?: number;
-    color: string | OpaqueColorValue;
+    color: ColorValue;
     style?: StyleProp<TextStyle>;
     weight?: SymbolWeight;
 }) {
     return (
         <MaterialIcons
-            color={color}
+            // Tab bars hand over a ColorValue (which RN 0.88 types also allow as null/number); in practice it is a color string.
+            color={color as ComponentProps<typeof MaterialIcons>["color"]}
             size={size}
             name={MAPPING[name]}
             style={style}

@@ -168,7 +168,7 @@ export default function SearchScreen() {
                                 <ThemedText style={styles.count}>
                                     {available === 1 ? "1 Tag found" : `${available} Tags found`}
                                 </ThemedText>
-                            ) : null
+                            ) : undefined
                         }
                         ListEmptyComponent={
                             <View style={styles.status}>
@@ -193,7 +193,7 @@ export default function SearchScreen() {
                                         Couldn&apos;t load more Tags. Tap to try again.
                                     </ThemedText>
                                 </Pressable>
-                            ) : null
+                            ) : undefined
                         }
                     />
                 )}
