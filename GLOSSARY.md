@@ -24,6 +24,10 @@ _Avoid_: WritKey
 The tonic note of a Tag's Key, sounded for as long as the Singer holds the Pitch button, as a pitch pipe sounds for as long as it is blown, to set the Key before singing.
 _Avoid_: Starting note, key note
 
+**Transposition**:
+How many semitones the Singer has moved the Pitch up or down from the Tag's Key, within an octave either way, to sing the Tag in another key. It starts at 0 each time the Tag is opened.
+_Avoid_: Offset, shift, capo
+
 ## Keeping track
 
 **Sung Part**:

@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { createCore } from "@/core";
+import { createCore, transposePitch } from "@/core";
 import { createTestPorts } from "@/core/testing";
 
 const fixture = (name: string) =>
@@ -94,5 +94,44 @@ describe("Reading a Tag's Key as its Pitch", () => {
         const cached = await createCore(ports).cachedTag(4209);
 
         expect(cached?.tag.pitch).toEqual({ tonality: "minor", tonic: "F#", semitone: 6 });
+    });
+});
+
+describe("Transposing a Pitch", () => {
+    const gFlatMajor = { tonality: "major", tonic: "Gb", semitone: 6 } as const;
+
+    it("raises the Pitch by semitones", () => {
+        expect(transposePitch(gFlatMajor, 2)).toEqual({ tonality: "major", tonic: "Ab", semitone: 8 });
+    });
+
+    it("wraps around the octave going up past B and down past C", () => {
+        const bFlatMinor = { tonality: "minor", tonic: "Bb", semitone: 10 } as const;
+        const dFlatMajor = { tonality: "major", tonic: "Db", semitone: 1 } as const;
+
+        expect(transposePitch(bFlatMinor, 3)).toEqual({ tonality: "minor", tonic: "Db", semitone: 1 });
+        expect(transposePitch(dFlatMajor, -2)).toEqual({ tonality: "major", tonic: "B", semitone: 11 });
+        expect(transposePitch(gFlatMajor, -11)).toEqual({ tonality: "major", tonic: "G", semitone: 7 });
+    });
+
+    it("spells with sharps when the Key's tonic is sharp or natural, and flats when it is flat", () => {
+        const fSharpMinor = { tonality: "minor", tonic: "F#", semitone: 6 } as const;
+        const gMajor = { tonality: "major", tonic: "G", semitone: 7 } as const;
+
+        expect(transposePitch(fSharpMinor, 2).tonic).toBe("G#");
+        expect(transposePitch(fSharpMinor, 1).tonic).toBe("G");
+        expect(transposePitch(gMajor, 1).tonic).toBe("G#");
+        expect(transposePitch(gMajor, -1).tonic).toBe("F#");
+        expect(transposePitch(gFlatMajor, -1).tonic).toBe("F");
+        expect(transposePitch(gFlatMajor, -3).tonic).toBe("Eb");
+        // B natural is a natural tonic, not a flat one, despite its letter.
+        const bMajor = { tonality: "major", tonic: "B", semitone: 11 } as const;
+        expect(transposePitch(bMajor, -1).tonic).toBe("A#");
+    });
+
+    it("leaves the Pitch as the Key spells it when moved by 0 semitones", () => {
+        const cFlatMajor = { tonality: "major", tonic: "Cb", semitone: 11 } as const;
+
+        expect(transposePitch(gFlatMajor, 0)).toEqual(gFlatMajor);
+        expect(transposePitch(cFlatMajor, 0)).toEqual(cFlatMajor);
     });
 });

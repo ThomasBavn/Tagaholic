@@ -28,3 +28,22 @@ export function readPitch(key: string | null): Pitch | null {
         semitone: (NATURALS[natural] + ACCIDENTALS[accidental] + 12) % 12,
     };
 }
+
+/** How far the Singer can transpose a Pitch, in semitones either way: just short of an octave. */
+export const TRANSPOSE_LIMIT = 11;
+
+/** Tonic spellings by semitone above C. */
+const FLATS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+/**
+ * The Pitch moved by a number of semitones, up when positive and down when negative.
+ * The new tonic is spelled the way the Key leans: with flats when the Key's tonic is flat,
+ * otherwise with sharps.
+ */
+export function transposePitch(pitch: Pitch, semitones: number): Pitch {
+    if (semitones === 0) return pitch;
+    const semitone = (((pitch.semitone + semitones) % 12) + 12) % 12;
+    const spellings = pitch.tonic.endsWith("b") ? FLATS : SHARPS;
+    return { ...pitch, tonic: spellings[semitone], semitone };
+}

@@ -1,11 +1,10 @@
 import { useAudioPlayer } from "expo-audio";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { Pressable, StyleSheet } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
-import { Colors } from "@/constants/Colors";
-import type { Pitch } from "@/core";
+import { transposePitch, type Pitch } from "@/core";
 
 /**
  * Bundled samples, one per tonic, indexed by semitone above C. They ship inside the app,
@@ -28,18 +27,15 @@ const SAMPLES = [
 ];
 
 /**
- * Sounds the tonic of a Tag's Key for as long as it is held, like a pitch pipe.
+ * Sounds the Tag's Pitch, transposed by some semitones, for as long as it is held, like a
+ * pitch pipe. It shows the tonic sounded and, in small text, the Transposition.
  *
  * The samples are steady notes, so every point in them sounds the same: a press plays from
  * wherever the last one paused, with nothing to rewind and nothing to wait for.
  */
-export function PitchButton({ pitch }: { pitch: Pitch }) {
+export function PitchButton({ pitch: keyPitch, semitones }: { pitch: Pitch; semitones: number }) {
+    const pitch = transposePitch(keyPitch, semitones);
     const player = useAudioPlayer(SAMPLES[pitch.semitone]);
-    const label = `${pitch.tonic} ${pitch.tonality}`;
-
-    useEffect(() => {
-        player.loop = true;
-    }, [player]);
 
     // Leaving the Tag page mid-note stops the note.
     useFocusEffect(
@@ -58,26 +54,43 @@ export function PitchButton({ pitch }: { pitch: Pitch }) {
     return (
         <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-            onPressIn={() => player.play()}
+            onPressIn={() => {
+                // Set on every press, as transposing swaps in a fresh player.
+                player.loop = true;
+                player.play();
+            }}
             onPressOut={() => player.pause()}
             accessibilityRole="button"
-            accessibilityLabel={`Pitch: ${label}`}
+            accessibilityLabel={`Pitch: ${pitch.tonic}, ${describeTransposition(semitones)}`}
             accessibilityHint="Sounds the note while held"
         >
-            <ThemedText style={styles.text}>{label}</ThemedText>
+            <ThemedText style={styles.text}>
+                {pitch.tonic} <ThemedText style={styles.transposition}>({formatTransposition(semitones)})</ThemedText>
+            </ThemedText>
         </Pressable>
     );
 }
 
+/** 0, +2 or −1, with a true minus sign. */
+function formatTransposition(semitones: number): string {
+    if (semitones > 0) return `+${semitones}`;
+    if (semitones < 0) return `−${-semitones}`;
+    return "0";
+}
+
+function describeTransposition(semitones: number): string {
+    if (semitones === 0) return "in the Tag's Key";
+    const count = Math.abs(semitones);
+    return `${semitones > 0 ? "up" : "down"} ${count} semitone${count === 1 ? "" : "s"}`;
+}
+
 const styles = StyleSheet.create({
     button: {
-        backgroundColor: Colors.light.tint,
-        borderRadius: 24,
-        paddingHorizontal: 20,
+        minWidth: 88,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 16,
         paddingVertical: 12,
-        // Lifts the button off the sheet music it floats over.
-        elevation: 4,
-        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.3)",
     },
     pressed: {
         opacity: 0.7,
@@ -86,5 +99,10 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontWeight: "600",
         userSelect: "none",
+    },
+    transposition: {
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: "400",
     },
 });
