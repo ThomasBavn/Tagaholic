@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -9,10 +9,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { SearchOptions } from "@/components/SearchOptions";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
-import type { SearchResult, TagSummary } from "@/core";
+import {
+    hasNextPage,
+    type PartCount,
+    type SearchOrder,
+    type SearchRequest,
+    type TagSummary,
+} from "@/core";
 import { core } from "@/core/app";
 
 /** "Major:Gb" → "Gb major". */
@@ -33,25 +40,84 @@ function TagRow({ tag }: { tag: TagSummary }) {
     );
 }
 
+type Status = "idle" | "searching" | "failed" | "loadingMore" | "moreFailed" | "done";
+
 export default function SearchScreen() {
     const [text, setText] = useState("");
-    const [result, setResult] = useState<SearchResult | null>(null);
-    const [searching, setSearching] = useState(false);
-    const [failed, setFailed] = useState(false);
+    const [parts, setParts] = useState<PartCount>(4);
+    const [sortBy, setSortBy] = useState<SearchOrder>("rating");
+    /** The text of the search whose results are shown. */
+    const [query, setQuery] = useState<string | null>(null);
+    const [tags, setTags] = useState<TagSummary[]>([]);
+    const [available, setAvailable] = useState(0);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [status, setStatus] = useState<Status>("idle");
+    /** Identifies the latest search, so that answers to older ones are ignored. */
+    const latest = useRef(0);
 
-    const search = async () => {
-        if (!text.trim()) return;
-        setSearching(true);
-        setFailed(false);
+    const runSearch = async (request: SearchRequest & { page: number }) => {
+        const id = ++latest.current;
+        const first = request.page === 1;
+        setStatus(first ? "searching" : "loadingMore");
         try {
-            setResult(await core.search({ text: text.trim() }));
+            const result = await core.search(request);
+            if (id !== latest.current) return;
+            setTags((shown) => {
+                if (first) return result.tags;
+                const seen = new Set(shown.map((tag) => tag.id));
+                return [...shown, ...result.tags.filter((tag) => !seen.has(tag.id))];
+            });
+            setAvailable(result.available);
+            setPage(request.page);
+            setHasMore(hasNextPage(request.page, result));
+            setStatus("done");
         } catch (error) {
+            if (id !== latest.current) return;
             console.error(error);
-            setFailed(true);
-        } finally {
-            setSearching(false);
+            setStatus(first ? "failed" : "moreFailed");
         }
     };
+
+    /**
+     * Starts a new search from page 1 with the typed text. When an option changes and the
+     * box has been cleared, it searches the shown query again.
+     */
+    const search = (options: { parts?: PartCount; sortBy?: SearchOrder } = {}) => {
+        const optionChanged = options.parts !== undefined || options.sortBy !== undefined;
+        const searchText = text.trim() || (optionChanged ? query : null);
+        if (!searchText) return;
+        setText(searchText);
+        setQuery(searchText);
+        setTags([]);
+        void runSearch({
+            text: searchText,
+            parts: options.parts ?? parts,
+            sortBy: options.sortBy ?? sortBy,
+            page: 1,
+        });
+    };
+
+    const changeParts = (value: PartCount) => {
+        setParts(value);
+        search({ parts: value });
+    };
+
+    const changeSortBy = (value: SearchOrder) => {
+        setSortBy(value);
+        search({ sortBy: value });
+    };
+
+    const loadNextPage = () => {
+        if (query === null) return;
+        void runSearch({ text: query, parts, sortBy, page: page + 1 });
+    };
+
+    const onEndReached = () => {
+        if (hasMore && status === "done") loadNextPage();
+    };
+
+    const showList = status === "done" || status === "loadingMore" || status === "moreFailed";
 
     return (
         <ThemedView style={styles.container}>
@@ -62,36 +128,75 @@ export default function SearchScreen() {
                         placeholder="Title or lyrics"
                         value={text}
                         onChangeText={setText}
-                        onSubmitEditing={search}
+                        onSubmitEditing={() => search()}
                         returnKeyType="search"
                         autoCorrect={false}
                     />
                     <Pressable
                         style={styles.button}
-                        onPress={search}
+                        onPress={() => search()}
                         accessibilityRole="button"
                     >
                         <ThemedText style={styles.buttonText}>Search</ThemedText>
                     </Pressable>
                 </View>
+                <SearchOptions
+                    parts={parts}
+                    sortBy={sortBy}
+                    onChangeParts={changeParts}
+                    onChangeSortBy={changeSortBy}
+                />
 
-                {searching && <ActivityIndicator style={styles.status} />}
-                {failed && (
-                    <ThemedText style={styles.status}>
-                        Search failed. Please try again.
-                    </ThemedText>
+                {status === "searching" && <ActivityIndicator style={styles.status} />}
+                {status === "failed" && (
+                    <View style={styles.status}>
+                        <ThemedText type="defaultSemiBold">
+                            Can&apos;t reach barbershoptags.com
+                        </ThemedText>
+                        <ThemedText>
+                            You may be offline, or the site may be down. Check your connection
+                            and try again.
+                        </ThemedText>
+                    </View>
                 )}
-                {result && !searching && (
+                {showList && (
                     <FlatList
-                        data={result.tags}
+                        data={tags}
                         keyExtractor={(tag) => String(tag.id)}
                         renderItem={({ item }) => <TagRow tag={item} />}
+                        onEndReached={onEndReached}
+                        onEndReachedThreshold={0.5}
                         ListHeaderComponent={
-                            <ThemedText style={styles.count}>
-                                {result.available === 1
-                                    ? "1 Tag found"
-                                    : `${result.available} Tags found`}
-                            </ThemedText>
+                            available > 0 ? (
+                                <ThemedText style={styles.count}>
+                                    {available === 1 ? "1 Tag found" : `${available} Tags found`}
+                                </ThemedText>
+                            ) : null
+                        }
+                        ListEmptyComponent={
+                            <View style={styles.status}>
+                                <ThemedText type="defaultSemiBold">No Tags found</ThemedText>
+                                <ThemedText>
+                                    {parts === "any"
+                                        ? `Nothing matches “${query}”. Try other words.`
+                                        : `No ${parts}-part Tags match “${query}”. Try other words or another number of parts.`}
+                                </ThemedText>
+                            </View>
+                        }
+                        ListFooterComponent={
+                            status === "loadingMore" ? (
+                                <ActivityIndicator style={styles.status} />
+                            ) : status === "moreFailed" ? (
+                                <Pressable
+                                    style={styles.status}
+                                    onPress={loadNextPage}
+                                    accessibilityRole="button"
+                                >
+                                    <ThemedText>
+                                        Couldn&apos;t load more Tags. Tap to try again.
+                                    </ThemedText>
+                                </Pressable>
+                            ) : null
                         }
                     />
                 )}
@@ -128,6 +233,7 @@ const styles = StyleSheet.create({
         color: "#fff",
     },
     status: {
+        gap: 4,
         padding: 16,
     },
     count: {

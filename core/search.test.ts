@@ -1,7 +1,14 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { createCore } from "@/core";
+import {
+    createCore,
+    hasNextPage,
+    SEARCH_PAGE_SIZE,
+    SearchFailedError,
+    type SearchRequest,
+    type TagSummary,
+} from "@/core";
 import { createTestPorts } from "@/core/testing";
 
 const fixture = (name: string) =>
@@ -51,7 +58,7 @@ describe("Searching Tags", () => {
         ]);
     });
 
-    it("asks barbershoptags.com for 4-part Tags as Tagaholic, requesting only summary fields", async () => {
+    it("asks barbershoptags.com for the first page of 4-part Tags by rating, as Tagaholic, requesting only summary fields", async () => {
         const ports = createTestPorts();
         ports.tagSource.respondWith(fixture("search-eyes.xml"));
         const core = createCore(ports);
@@ -62,9 +69,144 @@ describe("Searching Tags", () => {
             {
                 q: "sore eyes",
                 Parts: "4",
+                Sortby: "Rating",
+                n: String(SEARCH_PAGE_SIZE),
+                start: "1",
                 fldlist: "id,Title,WritKey,Parts,Rating",
                 client: "Tagaholic",
             },
         ]);
+    });
+});
+
+describe("Filtering, sorting and paging search results", () => {
+    async function querySentFor(request: SearchRequest) {
+        const ports = createTestPorts();
+        ports.tagSource.respondWith(fixture("search-eyes.xml"));
+        await createCore(ports).search(request);
+        return ports.tagSource.queries[0];
+    }
+
+    it.each([4, 5, 6] as const)("asks for %i-part Tags", async (parts) => {
+        const query = await querySentFor({ text: "eyes", parts });
+
+        expect(query.Parts).toBe(String(parts));
+    });
+
+    it("leaves out the part count when any number of parts will do", async () => {
+        const query = await querySentFor({ text: "eyes", parts: "any" });
+
+        expect(query).not.toHaveProperty("Parts");
+    });
+
+    it("sorts by rating", async () => {
+        const query = await querySentFor({ text: "eyes", sortBy: "rating" });
+
+        expect(query.Sortby).toBe("Rating");
+    });
+
+    it("sorts by download count", async () => {
+        const query = await querySentFor({ text: "eyes", sortBy: "downloads" });
+
+        expect(query.Sortby).toBe("Downloaded");
+    });
+
+    it("asks for the page after the ones already shown", async () => {
+        const second = await querySentFor({ text: "eyes", page: 2 });
+        const third = await querySentFor({ text: "eyes", page: 3 });
+
+        expect(second).toMatchObject({
+            n: String(SEARCH_PAGE_SIZE),
+            start: String(SEARCH_PAGE_SIZE + 1),
+        });
+        expect(third).toMatchObject({
+            n: String(SEARCH_PAGE_SIZE),
+            start: String(2 * SEARCH_PAGE_SIZE + 1),
+        });
+    });
+
+    it.each([0, -1, 1.5])("refuses page %p, because pages start at 1", async (page) => {
+        const ports = createTestPorts();
+        ports.tagSource.respondWith(fixture("search-eyes.xml"));
+        const core = createCore(ports);
+
+        const search = core.search({ text: "eyes", page });
+
+        await expect(search).rejects.toBeInstanceOf(RangeError);
+        await expect(search).rejects.not.toBeInstanceOf(SearchFailedError);
+        expect(ports.tagSource.queries).toEqual([]);
+    });
+
+    it("keeps the filter and sort order when loading the next page", async () => {
+        const query = await querySentFor({
+            text: "eyes",
+            parts: 6,
+            sortBy: "downloads",
+            page: 2,
+        });
+
+        expect(query).toMatchObject({ q: "eyes", Parts: "6", Sortby: "Downloaded" });
+    });
+});
+
+describe("When a search fails", () => {
+    it("reports a failed search when barbershoptags.com can't be reached", async () => {
+        const ports = createTestPorts();
+        ports.tagSource.failWith(new TypeError("Network request failed"));
+        const core = createCore(ports);
+
+        await expect(core.search({ text: "eyes" })).rejects.toBeInstanceOf(SearchFailedError);
+    });
+
+    it("reports a failed search when barbershoptags.com answers with something that isn't a search result", async () => {
+        const ports = createTestPorts();
+        ports.tagSource.respondWith("<html><body>Service Unavailable</body></html>");
+        const core = createCore(ports);
+
+        await expect(core.search({ text: "eyes" })).rejects.toBeInstanceOf(SearchFailedError);
+    });
+
+    it("reports a failed search when the answer has no number of available Tags", async () => {
+        const ports = createTestPorts();
+        ports.tagSource.respondWith('<?xml version="1.0" ?><tags count="0"></tags>');
+        const core = createCore(ports);
+
+        await expect(core.search({ text: "eyes" })).rejects.toBeInstanceOf(SearchFailedError);
+    });
+
+    it("keeps the reason a search failed", async () => {
+        const ports = createTestPorts();
+        const offline = new TypeError("Network request failed");
+        ports.tagSource.failWith(offline);
+        const core = createCore(ports);
+
+        await expect(core.search({ text: "eyes" })).rejects.toHaveProperty("cause", offline);
+    });
+
+    it("does not treat an empty result as a failure", async () => {
+        const ports = createTestPorts();
+        ports.tagSource.respondWith(fixture("search-empty.xml"));
+        const core = createCore(ports);
+
+        await expect(core.search({ text: "xyzzyqq" })).resolves.toEqual({ available: 0, tags: [] });
+    });
+});
+
+describe("Knowing whether there is another page", () => {
+    const tag: TagSummary = { id: 1, title: "A Tag", key: null, parts: 4, rating: 3 };
+    const page = (count: number) => Array.from({ length: count }, (_, i) => ({ ...tag, id: i }));
+
+    it("has another page while earlier pages hold fewer Tags than are available", () => {
+        expect(hasNextPage(1, { available: 45, tags: page(SEARCH_PAGE_SIZE) })).toBe(true);
+        expect(hasNextPage(2, { available: 45, tags: page(SEARCH_PAGE_SIZE) })).toBe(true);
+    });
+
+    it("has no page after the one that reaches the number available", () => {
+        expect(hasNextPage(3, { available: 45, tags: page(5) })).toBe(false);
+        expect(hasNextPage(2, { available: 40, tags: page(SEARCH_PAGE_SIZE) })).toBe(false);
+    });
+
+    it("stops when a page comes back empty, even if more Tags were said to be available", () => {
+        expect(hasNextPage(3, { available: 100, tags: [] })).toBe(false);
     });
 });
