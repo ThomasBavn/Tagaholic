@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { createCore, stepTransposition, transposePitch } from "@/core";
+import { createCore, justIntonationCents, stepTransposition, transposePitch } from "@/core";
 import { createTestPorts } from "@/core/testing";
 
 const fixture = (name: string) =>
@@ -146,5 +146,25 @@ describe("Stepping the Transposition a semitone", () => {
     it("rolls over to 0 past +11 and past −11, an octave away from the Key", () => {
         expect(stepTransposition(11, 1)).toBe(0);
         expect(stepTransposition(-11, -1)).toBe(0);
+    });
+});
+
+describe("Tuning a transposed Pitch in just intonation", () => {
+    it("leaves the Key's own tonic at standard pitch", () => {
+        expect(justIntonationCents(0)).toBe(0);
+    });
+
+    it.each([
+        [7, "a pure fifth (3/2)", 1.955],
+        [4, "a pure major third (5/4)", -13.686],
+        [3, "a pure minor third (6/5)", 15.641],
+        [10, "a pure minor seventh (9/5)", 17.596],
+    ])("tunes %i semitones up as %s, that many cents off equal temperament", (semitones, _, cents) => {
+        expect(justIntonationCents(semitones)).toBeCloseTo(cents, 3);
+    });
+
+    it("tunes downward Transpositions as the same pure intervals below the Key", () => {
+        expect(justIntonationCents(-7)).toBeCloseTo(-1.955, 3);
+        expect(justIntonationCents(-4)).toBeCloseTo(13.686, 3);
     });
 });

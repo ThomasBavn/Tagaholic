@@ -56,3 +56,22 @@ export function transposePitch(pitch: Pitch, semitones: number): Pitch {
     const spellings = pitch.tonic.endsWith("b") ? FLATS : SHARPS;
     return { ...pitch, tonic: spellings[semitone], semitone };
 }
+
+/**
+ * Pure (5-limit just) intervals above the Key's tonic, by semitones up: unison, minor second,
+ * major second, minor third, major third, fourth, tritone, fifth, minor sixth, major sixth,
+ * minor seventh and major seventh.
+ */
+const JUST_RATIOS = [1, 16 / 15, 9 / 8, 6 / 5, 5 / 4, 4 / 3, 45 / 32, 3 / 2, 8 / 5, 5 / 3, 9 / 5, 15 / 8];
+
+/**
+ * How many cents a transposed Pitch sits off equal temperament when tuned as a pure interval
+ * from the Key's tonic, which itself stays at standard pitch. A downward Transposition is
+ * the same pure interval below the tonic.
+ */
+export function justIntonationCents(semitones: number): number {
+    if (semitones === 0) return 0;
+    const steps = Math.abs(semitones) % 12;
+    const intervalCents = 1200 * Math.log2(JUST_RATIOS[steps]) - 100 * steps;
+    return semitones > 0 ? intervalCents : -intervalCents;
+}

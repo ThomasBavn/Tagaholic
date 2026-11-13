@@ -25,7 +25,7 @@ The tonic note of a Tag's Key, sounded for as long as the Singer holds the Pitch
 _Avoid_: Starting note, key note
 
 **Transposition**:
-How many semitones the Singer has moved the Pitch up or down from the Tag's Key, up to 11 either way, to sing the Tag in another key. Stepping past 11 rolls it over to 0, an octave from the Key. It starts at 0 each time the Tag is opened.
+How many semitones the Singer has moved the Pitch up or down from the Tag's Key, up to 11 either way, to sing the Tag in another key. Stepping past 11 rolls it over to 0, an octave from the Key. It starts at 0 each time the Tag is opened. A transposed Pitch is tuned in just intonation: a pure interval from the Key's tonic, which stays at standard pitch.
 _Avoid_: Offset, shift, capo
 
 ## Keeping track
