@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PitchButton } from "@/components/PitchButton";
 import { SheetMusicViewer } from "@/components/SheetMusicViewer";
@@ -14,6 +15,7 @@ export default function TagScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [tag, setTag] = useState<Tag | null>(null);
     const [failed, setFailed] = useState(false);
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         let current = true;
@@ -40,12 +42,18 @@ export default function TagScreen() {
                     This Tag couldn&apos;t be opened. Please try again.
                 </ThemedText>
             )}
+            {tag && <SheetMusicViewer sheetMusic={tag.sheetMusic} />}
             {tag?.pitch && (
-                <View style={styles.toolbar}>
+                // Floats in the lower-left corner, over the sheet music, clear of notches and home bars.
+                <View
+                    style={[
+                        styles.pitch,
+                        { bottom: insets.bottom + 16, left: insets.left + 16 },
+                    ]}
+                >
                     <PitchButton pitch={tag.pitch} />
                 </View>
             )}
-            {tag && <SheetMusicViewer sheetMusic={tag.sheetMusic} />}
         </ThemedView>
     );
 }
@@ -57,8 +65,7 @@ const styles = StyleSheet.create({
     status: {
         padding: 16,
     },
-    toolbar: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+    pitch: {
+        position: "absolute",
     },
 });
