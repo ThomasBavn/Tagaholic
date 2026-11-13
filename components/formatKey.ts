@@ -22,3 +22,17 @@ export function formatKey(key: string | null): string {
     const [tonality, tonic] = key.split(":");
     return tonic ? `${formatTonic(tonic)} ${tonality.toLowerCase()}` : key;
 }
+
+/** A Transposition as shown on the Pitch button: 0, +2 or −1, with a true minus sign. */
+export function formatTransposition(transposition: number): string {
+    if (transposition > 0) return `+${transposition}`;
+    if (transposition < 0) return `−${-transposition}`;
+    return "0";
+}
+
+/** A Transposition as a screen reader should say it: "up 2 semitones", "in the Tag's Key". */
+export function describeTransposition(transposition: number): string {
+    if (transposition === 0) return "in the Tag's Key";
+    const count = Math.abs(transposition);
+    return `${transposition > 0 ? "up" : "down"} ${count} semitone${count === 1 ? "" : "s"}`;
+}

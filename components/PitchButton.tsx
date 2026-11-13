@@ -1,9 +1,14 @@
 import { useAudioPlayer, type AudioPlayer } from "expo-audio";
 import { useFocusEffect } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Platform, Pressable, StyleSheet } from "react-native";
 
-import { formatTonic, speakTonic } from "@/components/formatKey";
+import {
+    describeTransposition,
+    formatTonic,
+    formatTransposition,
+    speakTonic,
+} from "@/components/formatKey";
 import { ThemedText } from "@/components/ThemedText";
 import { justIntonationCents, transposePitch, type Pitch } from "@/core";
 
@@ -29,21 +34,35 @@ const SAMPLES = [
 ];
 
 /**
- * Sounds the Tag's Pitch, transposed by some semitones, for as long as it is held, like a
+ * Sounds the Tag's Pitch, moved by the Transposition, for as long as it is held, like a
  * pitch pipe. A transposed Pitch is tuned as a pure interval from the Key's tonic. It shows
  * the tonic sounded and, in small text, the Transposition.
  *
  * The samples are steady notes, so every point in them sounds the same: a press plays from
  * wherever the last one paused, with nothing to rewind and nothing to wait for.
  */
-export function PitchButton({ pitch: keyPitch, semitones }: { pitch: Pitch; semitones: number }) {
-    const pitch = transposePitch(keyPitch, semitones);
+export function PitchButton({ pitch: keyPitch, transposition }: { pitch: Pitch; transposition: number }) {
+    const pitch = transposePitch(keyPitch, transposition);
     const player = useAudioPlayer(SAMPLES[pitch.semitone]);
+    const held = useRef(false);
+
+    // iOS loops a sample by restarting it at normal speed, which would drop the just-intonation
+    // detune after the first pass. So there the button restarts it instead, at the tuned speed.
+    useEffect(() => {
+        if (!LOOPS_BY_RESTARTING) return;
+        const subscription = player.addListener("playbackStatusUpdate", (status) => {
+            if (status.didJustFinish && held.current) {
+                player.seekTo(0).then(() => player.play(), console.error);
+            }
+        });
+        return () => subscription.remove();
+    }, [player]);
 
     // Leaving the Tag page mid-note stops the note.
     useFocusEffect(
         useCallback(
             () => () => {
+                held.current = false;
                 try {
                     player.pause();
                 } catch {
@@ -58,22 +77,33 @@ export function PitchButton({ pitch: keyPitch, semitones }: { pitch: Pitch; semi
         <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             onPressIn={() => {
+                held.current = true;
                 // Set on every press, as transposing swaps in a fresh player.
-                player.loop = true;
-                tune(player, justIntonationCents(semitones));
+                player.loop = !LOOPS_BY_RESTARTING;
+                tune(player, justIntonationCents(transposition));
                 player.play();
             }}
-            onPressOut={() => player.pause()}
+            onPressOut={() => {
+                held.current = false;
+                player.pause();
+            }}
             accessibilityRole="button"
-            accessibilityLabel={`Pitch: ${speakTonic(pitch.tonic)}, ${describeTransposition(semitones)}`}
+            accessibilityLabel={`Pitch: ${speakTonic(pitch.tonic)}, ${describeTransposition(transposition)}`}
             accessibilityHint="Sounds the note while held"
         >
             <ThemedText style={styles.text}>
-                {formatTonic(pitch.tonic)} <ThemedText style={styles.transposition}>({formatTransposition(semitones)})</ThemedText>
+                {formatTonic(pitch.tonic)}{" "}
+                <ThemedText style={styles.transposition}>({formatTransposition(transposition)})</ThemedText>
             </ThemedText>
         </Pressable>
     );
 }
+
+/**
+ * expo-audio 0.4.5 on iOS loops by restarting the sample with AVPlayer's play(), which plays
+ * at normal speed. On Android and web looping keeps the speed.
+ */
+const LOOPS_BY_RESTARTING = Platform.OS === "ios";
 
 /**
  * Detunes the equal-tempered sample by some cents, by playing it a little faster or slower.
@@ -85,19 +115,6 @@ function tune(player: AudioPlayer, cents: number) {
     // and web the pitch follows the rate as long as pitch correction stays off.
     if (Platform.OS === "ios") player.shouldCorrectPitch = true;
     player.setPlaybackRate(2 ** (cents / 1200), "medium");
-}
-
-/** 0, +2 or −1, with a true minus sign. */
-function formatTransposition(semitones: number): string {
-    if (semitones > 0) return `+${semitones}`;
-    if (semitones < 0) return `−${-semitones}`;
-    return "0";
-}
-
-function describeTransposition(semitones: number): string {
-    if (semitones === 0) return "in the Tag's Key";
-    const count = Math.abs(semitones);
-    return `${semitones > 0 ? "up" : "down"} ${count} semitone${count === 1 ? "" : "s"}`;
 }
 
 const styles = StyleSheet.create({

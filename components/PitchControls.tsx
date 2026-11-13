@@ -15,22 +15,22 @@ const HEIGHT = 36;
  * isn't remembered.
  */
 export function PitchControls({ pitch }: { pitch: Pitch }) {
-    const [semitones, setSemitones] = useState(0);
+    const [transposition, setTransposition] = useState(0);
 
     return (
         <View style={styles.group}>
             <TransposeButton
                 icon="chevron.down"
                 label="Lower Pitch a semitone"
-                onPress={() => setSemitones((current) => stepTransposition(current, -1))}
+                onPress={() => setTransposition((current) => stepTransposition(current, -1))}
             />
             <View style={styles.divider} />
-            <PitchButton pitch={pitch} semitones={semitones} />
+            <PitchButton pitch={pitch} transposition={transposition} />
             <View style={styles.divider} />
             <TransposeButton
                 icon="chevron.up"
                 label="Raise Pitch a semitone"
-                onPress={() => setSemitones((current) => stepTransposition(current, 1))}
+                onPress={() => setTransposition((current) => stepTransposition(current, 1))}
             />
         </View>
     );
