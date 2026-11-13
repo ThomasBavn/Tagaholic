@@ -36,7 +36,9 @@ function Choice<T>({
                     <Pressable
                         key={option.label}
                         style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => onChange(option.value)}
+                        onPress={() => {
+                            if (!selected) onChange(option.value);
+                        }}
                         accessibilityRole="radio"
                         accessibilityLabel={option.label}
                         accessibilityState={{ checked: selected }}

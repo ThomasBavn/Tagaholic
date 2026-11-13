@@ -14,7 +14,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import {
-    SearchFailedError,
+    hasNextPage,
     type PartCount,
     type SearchOrder,
     type SearchRequest,
@@ -51,6 +51,7 @@ export default function SearchScreen() {
     const [tags, setTags] = useState<TagSummary[]>([]);
     const [available, setAvailable] = useState(0);
     const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
     const [status, setStatus] = useState<Status>("idle");
     /** Identifies the latest search, so that answers to older ones are ignored. */
     const latest = useRef(0);
@@ -69,19 +70,24 @@ export default function SearchScreen() {
             });
             setAvailable(result.available);
             setPage(request.page);
+            setHasMore(hasNextPage(request.page, result));
             setStatus("done");
         } catch (error) {
             if (id !== latest.current) return;
-            if (!(error instanceof SearchFailedError)) console.error(error);
+            console.error(error);
             setStatus(first ? "failed" : "moreFailed");
         }
     };
 
-    /** Starts a new search from page 1, with the typed text or, when an option changes, the shown query. */
+    /**
+     * Starts a new search from page 1 with the typed text. When an option changes and the
+     * box has been cleared, it searches the shown query again.
+     */
     const search = (options: { parts?: PartCount; sortBy?: SearchOrder } = {}) => {
         const optionChanged = options.parts !== undefined || options.sortBy !== undefined;
-        const searchText = optionChanged ? query : text.trim();
+        const searchText = text.trim() || (optionChanged ? query : null);
         if (!searchText) return;
+        setText(searchText);
         setQuery(searchText);
         setTags([]);
         void runSearch({
@@ -107,7 +113,6 @@ export default function SearchScreen() {
         void runSearch({ text: query, parts, sortBy, page: page + 1 });
     };
 
-    const hasMore = tags.length < available;
     const onEndReached = () => {
         if (hasMore && status === "done") loadNextPage();
     };
