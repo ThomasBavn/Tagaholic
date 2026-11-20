@@ -24,9 +24,16 @@ export default function RootLayout() {
             value={DefaultTheme}
         >
             <GestureHandlerRootView style={{ flex: 1 }}>
-                <Stack>
+                {/* Every screen is portrait, as app.json says, except the Tag page. A screen
+                    must name its orientation: one without lets the phone rotate freely. */}
+                <Stack screenOptions={{ orientation: "portrait_up" }}>
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen name="tag/[id]" options={{ title: "Tag" }} />
+                    {/* Landscape from the moment it opens, whatever the sheet music is,
+                        and while the Tag is loading or has failed to open. */}
+                    <Stack.Screen
+                        name="tag/[id]"
+                        options={{ title: "Tag", orientation: "landscape" }}
+                    />
                     <Stack.Screen name="folder/[id]" options={{ title: "Folder" }} />
                     <Stack.Screen name="+not-found" />
                 </Stack>
