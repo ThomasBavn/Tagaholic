@@ -1,18 +1,34 @@
 import type { Clock, FileStore, Ports, Store, TagSource } from "./ports";
 
-/** A Tag source for tests. It never touches the network: it serves a canned XML response. */
+/** A Tag source for tests. It never touches the network: it serves a canned XML response and canned files. */
 export class TestTagSource implements TagSource {
     readonly queries: Record<string, string>[] = [];
     private response: string | null = null;
     private failure: Error | null = null;
+    private readonly files = new Map<string, Uint8Array>();
 
     respondWith(xml: string): void {
         this.response = xml;
     }
 
-    /** Makes every query fail, as when the phone is offline or barbershoptags.com is down. */
+    /** Serves a file, such as sheet music, at a URL. */
+    serveFile(url: string, data: Uint8Array): void {
+        this.files.set(url, data);
+    }
+
+    /** Makes downloads from the URL fail, while queries still work. */
+    stopServingFile(url: string): void {
+        this.files.delete(url);
+    }
+
+    /** Makes every query and download fail, as when the phone is offline or barbershoptags.com is down. */
     failWith(error: Error): void {
         this.failure = error;
+    }
+
+    /** Undoes `failWith`. */
+    goOnline(): void {
+        this.failure = null;
     }
 
     async query(params: Record<string, string>): Promise<string> {
@@ -24,6 +40,17 @@ export class TestTagSource implements TagSource {
             throw new Error("TestTagSource has no response configured");
         }
         return this.response;
+    }
+
+    async download(url: string): Promise<Uint8Array> {
+        if (this.failure !== null) {
+            throw this.failure;
+        }
+        const file = this.files.get(url);
+        if (!file) {
+            throw new Error(`TestTagSource serves no file at ${url}`);
+        }
+        return file;
     }
 }
 
@@ -43,6 +70,8 @@ export class InMemoryStore implements Store {
     }
 }
 
+const MEMORY_LOCATION = "memory://";
+
 export class InMemoryFileStore implements FileStore {
     private readonly files = new Map<string, Uint8Array>();
 
@@ -50,8 +79,14 @@ export class InMemoryFileStore implements FileStore {
         this.files.set(key, data);
     }
 
-    async read(key: string): Promise<Uint8Array | null> {
-        return this.files.get(key) ?? null;
+    async location(key: string): Promise<string | null> {
+        return this.files.has(key) ? MEMORY_LOCATION + key : null;
+    }
+
+    /** What a screen would show from a location the file store gave out, or null if the file is gone. */
+    fileAt(location: string): Uint8Array | null {
+        if (!location.startsWith(MEMORY_LOCATION)) return null;
+        return this.files.get(location.slice(MEMORY_LOCATION.length)) ?? null;
     }
 
     async remove(key: string): Promise<void> {

@@ -7,9 +7,9 @@ import { FolderNameDialog } from "@/components/FolderNameDialog";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { Colors } from "@/constants/Colors";
 import type { FolderSummary } from "@/core";
 import { core } from "@/core/app";
+import { usePalette } from "@/hooks/usePalette";
 
 const tagCount = (count: number) => (count === 1 ? "1 Tag" : `${count} Tags`);
 
@@ -22,14 +22,15 @@ function FolderRow({
     onRename: () => void;
     onDelete: () => void;
 }) {
+    const palette = usePalette();
     return (
-        <View style={styles.row}>
+        <View style={[styles.row, { borderBottomColor: palette.border }]}>
             <Link href={{ pathname: "/folder/[id]", params: { id: folder.id } }} asChild>
                 <Pressable style={styles.link} accessibilityRole="link">
                     <IconSymbol
                         name={folder.builtIn ? "bookmark.fill" : "folder.fill"}
                         size={24}
-                        color={Colors.light.tint}
+                        color={palette.accent}
                     />
                     <ThemedText type="defaultSemiBold" style={styles.name}>
                         {folder.name}
@@ -46,7 +47,7 @@ function FolderRow({
                         accessibilityRole="button"
                         accessibilityLabel={`Rename ${folder.name}`}
                     >
-                        <IconSymbol name="pencil" size={22} color={Colors.light.icon} />
+                        <IconSymbol name="pencil" size={22} color={palette.icon} />
                     </Pressable>
                     <Pressable
                         onPress={onDelete}
@@ -54,7 +55,7 @@ function FolderRow({
                         accessibilityRole="button"
                         accessibilityLabel={`Delete ${folder.name}`}
                     >
-                        <IconSymbol name="trash" size={22} color={Colors.light.icon} />
+                        <IconSymbol name="trash" size={22} color={palette.icon} />
                     </Pressable>
                 </>
             )}
@@ -64,6 +65,7 @@ function FolderRow({
 
 /** The Folders tab: Bookmarks first, then the Singer's own Folders, which can be managed here. */
 export default function FoldersScreen() {
+    const palette = usePalette();
     const [folders, setFolders] = useState<FolderSummary[] | null>(null);
     // The Folder name dialog, when it is open.
     const [naming, setNaming] = useState<
@@ -122,7 +124,7 @@ export default function FoldersScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="New Folder"
                     >
-                        <IconSymbol name="folder.badge.plus" size={28} color={Colors.light.tint} />
+                        <IconSymbol name="folder.badge.plus" size={28} color={palette.accent} />
                     </Pressable>
                 </View>
                 {folders === null ? (
@@ -170,7 +172,6 @@ const styles = StyleSheet.create({
         gap: 20,
         paddingRight: 16,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: "#ccc",
     },
     link: {
         flex: 1,

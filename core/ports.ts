@@ -3,9 +3,11 @@
  * so that behaviour lives in the core, where tests can reach it.
  */
 
-/** barbershoptags.com: sends API query parameters, returns the raw XML response. */
+/** barbershoptags.com: answers API queries with raw XML, and serves the files Tags link to. */
 export interface TagSource {
     query(params: Record<string, string>): Promise<string>;
+    /** Downloads a file barbershoptags.com links to, such as a Tag's sheet music. */
+    download(url: string): Promise<Uint8Array>;
 }
 
 /** On-device key-value storage for the Singer's data and cached Tag details. */
@@ -15,10 +17,12 @@ export interface Store {
     remove(key: string): Promise<void>;
 }
 
-/** On-device files, used for cached sheet music. */
+/** On-device files, used for cached sheet music. Keys are plain file names. */
 export interface FileStore {
     write(key: string, data: Uint8Array): Promise<void>;
-    read(key: string): Promise<Uint8Array | null>;
+    /** Where a screen can show the file from, such as a file:// URI, or null when there is no such file. */
+    location(key: string): Promise<string | null>;
+    /** Removes the file, if there is one. */
     remove(key: string): Promise<void>;
 }
 
