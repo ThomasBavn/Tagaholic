@@ -1,17 +1,38 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import type { FileStore, Ports, Store, TagSource } from "./ports";
+import { appFileStore } from "./appFileStore";
+import type { Ports, Store, TagSource } from "./ports";
 
 const API_URL = "https://www.barbershoptags.com/api.php";
+
+/** How long to wait before treating a weak signal as offline, so that saved Tags still open. */
+const QUERY_TIMEOUT_MS = 10_000;
+const DOWNLOAD_TIMEOUT_MS = 30_000;
+
+async function get(url: string, timeoutMs: number): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) {
+            throw new Error(`barbershoptags.com responded with ${response.status}`);
+        }
+        return response;
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 /** Calls the barbershoptags.com API directly (ADR 0001). */
 const barbershopTags: TagSource = {
     async query(params) {
-        const response = await fetch(`${API_URL}?${new URLSearchParams(params)}`);
-        if (!response.ok) {
-            throw new Error(`barbershoptags.com responded with ${response.status}`);
-        }
+        const response = await get(`${API_URL}?${new URLSearchParams(params)}`, QUERY_TIMEOUT_MS);
         return response.text();
+    },
+
+    async download(url) {
+        const response = await get(url, DOWNLOAD_TIMEOUT_MS);
+        return new Uint8Array(await response.arrayBuffer());
     },
 };
 
@@ -21,18 +42,11 @@ const asyncStorage: Store = {
     remove: (key) => AsyncStorage.removeItem(key),
 };
 
-/** Sheet music files are cached from #10 onwards; nothing uses the file store before then. */
-const noFileStore: FileStore = {
-    write: () => Promise.reject(new Error("The file store isn't available yet (#10)")),
-    read: () => Promise.reject(new Error("The file store isn't available yet (#10)")),
-    remove: () => Promise.reject(new Error("The file store isn't available yet (#10)")),
-};
-
 export function createAppPorts(): Ports {
     return {
         tagSource: barbershopTags,
         store: asyncStorage,
-        fileStore: noFileStore,
+        fileStore: appFileStore,
         clock: { now: () => Date.now() },
     };
 }
