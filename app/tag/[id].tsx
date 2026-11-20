@@ -72,15 +72,24 @@ export default function TagScreen() {
                         ) : null,
                 }}
             />
-            {!tag && !failed && <ActivityIndicator style={styles.status} />}
-            {failed && (
-                <ThemedText style={styles.status}>
-                    This Tag couldn&apos;t be opened. Please try again.
-                </ThemedText>
-            )}
-            {tag && <SheetMusicViewer sheetMusic={tag.sheetMusic} />}
+            {/* The page is landscape, so its content keeps clear of a notch or navigation bar on either side. */}
+            <View
+                style={[
+                    styles.content,
+                    { paddingLeft: insets.left, paddingRight: insets.right },
+                ]}
+            >
+                {!tag && !failed && <ActivityIndicator style={styles.status} />}
+                {failed && (
+                    <ThemedText style={styles.status}>
+                        This Tag couldn&apos;t be opened. Please try again.
+                    </ThemedText>
+                )}
+                {tag && <SheetMusicViewer sheetMusic={tag.sheetMusic} />}
+            </View>
             {tag?.pitch && (
-                // Floats in the lower-left corner, over the sheet music, clear of notches and home bars.
+                // Floats in the lower-left corner, over the sheet music, clear of notches,
+                // rounded corners and home bars whichever way the phone is turned.
                 <View
                     style={[
                         styles.pitch,
@@ -121,6 +130,9 @@ function BookmarkButton({
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
+    },
+    content: {
         flex: 1,
     },
     status: {
