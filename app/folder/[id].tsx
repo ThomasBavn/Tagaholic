@@ -86,7 +86,7 @@ export default function FolderScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <Stack.Screen options={{ title: loaded?.name ?? "" }} />
+            <Stack.Screen options={{ title: loaded?.name ?? (failed ? "Folder" : "") }} />
             {!loaded && !failed && <ActivityIndicator style={styles.status} />}
             {failed && (
                 <ThemedText style={styles.status}>This Folder couldn&apos;t be opened.</ThemedText>

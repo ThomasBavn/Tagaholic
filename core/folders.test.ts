@@ -152,6 +152,17 @@ describe("Deleting a Folder", () => {
         expect(await core.cachedTag(6415)).not.toBeNull();
     });
 
+    it("never lets a later Folder take its id", async () => {
+        const { core } = await coreWithOpenedTags();
+        await core.createFolder("Chorus retreat 2026");
+        const old = await core.createFolder("Old quartet");
+        await core.deleteFolder(old);
+
+        const created = await core.createFolder("Afterglow");
+
+        expect(created).not.toBe(old);
+    });
+
     it("isn't possible for Bookmarks", async () => {
         const { core } = await coreWithOpenedTags(2462);
         await core.toggleBookmark(2462);

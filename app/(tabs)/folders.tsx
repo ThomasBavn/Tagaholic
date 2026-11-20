@@ -65,7 +65,10 @@ function FolderRow({
 /** The Folders tab: Bookmarks first, then the Singer's own Folders, which can be managed here. */
 export default function FoldersScreen() {
     const [folders, setFolders] = useState<FolderSummary[] | null>(null);
-    const [naming, setNaming] = useState<{ renaming: FolderSummary | null } | null>(null);
+    // The Folder name dialog, when it is open.
+    const [naming, setNaming] = useState<
+        { mode: "create" } | { mode: "rename"; folder: FolderSummary } | null
+    >(null);
 
     const reload = useCallback(() => {
         core.folders().then(setFolders, (error) => console.error(error));
@@ -86,7 +89,7 @@ export default function FoldersScreen() {
     );
 
     const saveName = (name: string) => {
-        const renaming = naming?.renaming;
+        const renaming = naming?.mode === "rename" ? naming.folder : null;
         setNaming(null);
         const change = renaming ? core.renameFolder(renaming.id, name) : core.createFolder(name);
         change.then(reload, (error) => console.error(error));
@@ -114,7 +117,7 @@ export default function FoldersScreen() {
                 <View style={styles.header}>
                     <ThemedText type="title">Folders</ThemedText>
                     <Pressable
-                        onPress={() => setNaming({ renaming: null })}
+                        onPress={() => setNaming({ mode: "create" })}
                         hitSlop={8}
                         accessibilityRole="button"
                         accessibilityLabel="New Folder"
@@ -131,7 +134,7 @@ export default function FoldersScreen() {
                         renderItem={({ item }) => (
                             <FolderRow
                                 folder={item}
-                                onRename={() => setNaming({ renaming: item })}
+                                onRename={() => setNaming({ mode: "rename", folder: item })}
                                 onDelete={() => confirmDelete(item)}
                             />
                         )}
@@ -139,9 +142,9 @@ export default function FoldersScreen() {
                 )}
                 {naming && (
                     <FolderNameDialog
-                        title={naming.renaming ? "Rename Folder" : "New Folder"}
-                        initialName={naming.renaming?.name}
-                        confirmLabel={naming.renaming ? "Rename" : "Create"}
+                        title={naming.mode === "rename" ? "Rename Folder" : "New Folder"}
+                        initialName={naming.mode === "rename" ? naming.folder.name : ""}
+                        confirmLabel={naming.mode === "rename" ? "Rename" : "Create"}
                         onConfirm={saveName}
                         onCancel={() => setNaming(null)}
                     />

@@ -21,6 +21,8 @@ interface StoredFolder {
 }
 
 const FOLDERS_KEY = "folders";
+/** Own Folders are numbered "folder-1", "folder-2" and so on; this holds the last number used. */
+const LAST_FOLDER_NUMBER_KEY = "folders:lastNumber";
 
 const emptyBookmarks = (): StoredFolder => ({ id: BOOKMARKS, name: "Bookmarks", tagIds: [] });
 
@@ -69,9 +71,13 @@ export class Folders {
 
     /** Adds a new, empty Folder after the others. Returns its id. */
     create(name: string): Promise<string> {
-        return this.change((folders) => {
-            const id = nextId(folders);
-            folders.push({ id, name: folderName(name), tagIds: [] });
+        return this.change(async (folders) => {
+            const trimmed = folderName(name);
+            // Counted in the Store, so that a deleted Folder's id is never given out again.
+            const number = Number((await this.store.get(LAST_FOLDER_NUMBER_KEY)) ?? 0) + 1;
+            await this.store.set(LAST_FOLDER_NUMBER_KEY, String(number));
+            const id = `folder-${number}`;
+            folders.push({ id, name: trimmed, tagIds: [] });
             return id;
         });
     }
@@ -116,10 +122,10 @@ export class Folders {
     }
 
     /** Applies a change to the stored Folders and saves it, after any change under way. */
-    private change<T>(apply: (folders: StoredFolder[]) => T): Promise<T> {
+    private change<T>(apply: (folders: StoredFolder[]) => T | Promise<T>): Promise<T> {
         const change = this.changes.then(async () => {
             const folders = await this.all();
-            const result = apply(folders);
+            const result = await apply(folders);
             await this.store.set(FOLDERS_KEY, JSON.stringify(folders));
             return result;
         });
@@ -139,10 +145,4 @@ function folderName(name: string): string {
     const trimmed = name.trim();
     if (trimmed === "") throw new Error("A Folder needs a name");
     return trimmed;
-}
-
-/** Own Folders are numbered "folder-1", "folder-2" and so on. */
-function nextId(folders: StoredFolder[]): string {
-    const numbers = folders.map((folder) => Number(/^folder-(\d+)$/.exec(folder.id)?.[1] ?? 0));
-    return `folder-${Math.max(0, ...numbers) + 1}`;
 }

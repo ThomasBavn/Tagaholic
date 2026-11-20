@@ -7,8 +7,8 @@ import { Colors } from "@/constants/Colors";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 /**
- * Asks the Singer for a Folder name, to create or rename a Folder.
- * Mount it with a `key` per use, so that it starts from `initialName` each time.
+ * Asks the Singer for a Folder name, to create or rename a Folder. It reads `initialName`
+ * only when it mounts, so callers unmount it between uses.
  */
 export function FolderNameDialog({
     title,
