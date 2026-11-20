@@ -105,6 +105,7 @@ function BookmarkButton({
         <Pressable
             onPress={onPress}
             hitSlop={8}
+            style={styles.bookmark}
             accessibilityRole="switch"
             accessibilityLabel="Bookmark"
             accessibilityState={{ checked: bookmarked }}
@@ -127,5 +128,8 @@ const styles = StyleSheet.create({
     },
     pitch: {
         position: "absolute",
+    },
+    bookmark: {
+        paddingRight: 16,
     },
 });
