@@ -24,6 +24,8 @@ const MAPPING = {
     "magnifyingglass.circle.fill": "search",
     "folder.fill": "folder",
     "music.note.list": "library-music",
+    bookmark: "bookmark-border",
+    "bookmark.fill": "bookmark",
 } as IconMapping;
 
 /**

@@ -12,10 +12,10 @@ export interface TagSummary {
     rating: number;
 }
 
-export interface SearchResult {
+export interface SearchResult<T extends TagSummary = TagSummary> {
     /** How many Tags match in total, across all pages. */
     available: number;
-    tags: TagSummary[];
+    tags: T[];
 }
 
 const parser = new XMLParser({

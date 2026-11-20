@@ -1,5 +1,5 @@
-import { Link } from "expo-router";
-import { useRef, useState } from "react";
+import { Link, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -14,24 +14,32 @@ import { formatKey } from "@/components/formatKey";
 import { SearchOptions } from "@/components/SearchOptions";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
 import {
     hasNextPage,
     type PartCount,
+    type SearchHit,
     type SearchOrder,
     type SearchRequest,
-    type TagSummary,
 } from "@/core";
 import { core } from "@/core/app";
 
-function TagRow({ tag }: { tag: TagSummary }) {
+function TagRow({ tag }: { tag: SearchHit }) {
     return (
         <Link href={{ pathname: "/tag/[id]", params: { id: tag.id } }} asChild>
             <Pressable style={styles.row} accessibilityRole="link">
-                <ThemedText type="defaultSemiBold">{tag.title}</ThemedText>
-                <ThemedText style={styles.details}>
-                    {formatKey(tag.key)} · {tag.parts} parts · ★ {tag.rating.toFixed(1)}
-                </ThemedText>
+                <View style={styles.rowText}>
+                    <ThemedText type="defaultSemiBold">{tag.title}</ThemedText>
+                    <ThemedText style={styles.details}>
+                        {formatKey(tag.key)} · {tag.parts} parts · ★ {tag.rating.toFixed(1)}
+                    </ThemedText>
+                </View>
+                {tag.bookmarked && (
+                    <View accessible accessibilityLabel="Bookmarked">
+                        <IconSymbol name="bookmark.fill" size={22} color={Colors.light.tint} />
+                    </View>
+                )}
             </Pressable>
         </Link>
     );
@@ -45,13 +53,36 @@ export default function SearchScreen() {
     const [sortBy, setSortBy] = useState<SearchOrder>("rating");
     /** The text of the search whose results are shown. */
     const [query, setQuery] = useState<string | null>(null);
-    const [tags, setTags] = useState<TagSummary[]>([]);
+    const [tags, setTags] = useState<SearchHit[]>([]);
     const [available, setAvailable] = useState(0);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(false);
     const [status, setStatus] = useState<Status>("idle");
     /** Identifies the latest search, so that answers to older ones are ignored. */
     const latest = useRef(0);
+
+    // The Singer may change Bookmarks on a Tag page, so refresh the marks on coming back.
+    const shown = useRef(tags);
+    useEffect(() => {
+        shown.current = tags;
+    }, [tags]);
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+            const before = shown.current;
+            if (before.length === 0) return;
+            core.markBookmarked(before).then(
+                (marked) => {
+                    // Skip if a search replaced the results meanwhile.
+                    if (active && shown.current === before) setTags(marked);
+                },
+                (error) => console.error(error),
+            );
+            return () => {
+                active = false;
+            };
+        }, []),
+    );
 
     const runSearch = async (request: SearchRequest & { page: number }) => {
         const id = ++latest.current;
@@ -239,10 +270,16 @@ const styles = StyleSheet.create({
         opacity: 0.6,
     },
     row: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: "#ccc",
+    },
+    rowText: {
+        flex: 1,
     },
     details: {
         opacity: 0.7,
