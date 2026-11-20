@@ -46,6 +46,21 @@ export interface Core {
     folders(): Promise<FolderSummary[]>;
     /** The Tags in a Folder, in the order they were added, read from the copies saved on the device. */
     folderTags(folderId: string): Promise<Tag[]>;
+    /** Creates one of the Singer's own Folders, listed after the others. Returns its id. */
+    createFolder(name: string): Promise<string>;
+    /** Renames one of the Singer's own Folders. Bookmarks can't be renamed. */
+    renameFolder(folderId: string, name: string): Promise<void>;
+    /**
+     * Deletes one of the Singer's own Folders. Only the grouping goes: its Tags keep their
+     * Sung Parts and their place in other Folders. Bookmarks can't be deleted.
+     */
+    deleteFolder(folderId: string): Promise<void>;
+    /** Adds a Tag at the end of a Folder, unless it is already there. */
+    addToFolder(folderId: string, tagId: number): Promise<void>;
+    /** Takes a Tag out of a Folder, leaving it in any other Folders. */
+    removeFromFolder(folderId: string, tagId: number): Promise<void>;
+    /** The ids of the Folders that hold a Tag, in the Folders tab's order. */
+    foldersContaining(tagId: number): Promise<string[]>;
 }
 
 const cacheKey = (id: number) => `tag:${id}`;
@@ -99,6 +114,18 @@ export function createCore({ tagSource, store, clock }: Ports): Core {
         toggleBookmark: (id) => folders.toggle(BOOKMARKS, id),
 
         folders: () => folders.summaries(),
+
+        createFolder: (name) => folders.create(name),
+
+        renameFolder: (folderId, name) => folders.rename(folderId, name),
+
+        deleteFolder: (folderId) => folders.delete(folderId),
+
+        addToFolder: (folderId, tagId) => folders.add(folderId, tagId),
+
+        removeFromFolder: (folderId, tagId) => folders.remove(folderId, tagId),
+
+        foldersContaining: (tagId) => folders.containing(tagId),
 
         async folderTags(folderId) {
             const folder = await folders.get(folderId);
