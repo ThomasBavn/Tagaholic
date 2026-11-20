@@ -6,9 +6,9 @@ import { formatKey } from "@/components/formatKey";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { Colors } from "@/constants/Colors";
 import { BOOKMARKS, type Tag } from "@/core";
 import { core } from "@/core/app";
+import { usePalette } from "@/hooks/usePalette";
 
 function TagRow({
     tag,
@@ -19,12 +19,13 @@ function TagRow({
     folderName: string;
     onRemove: () => void;
 }) {
+    const palette = usePalette();
     return (
-        <View style={styles.row}>
+        <View style={[styles.row, { borderBottomColor: palette.border }]}>
             <Link href={{ pathname: "/tag/[id]", params: { id: tag.id } }} asChild>
                 <Pressable style={styles.link} accessibilityRole="link">
                     <ThemedText type="defaultSemiBold">{tag.title}</ThemedText>
-                    <ThemedText style={styles.details}>
+                    <ThemedText style={{ color: palette.mutedText }}>
                         {formatKey(tag.key)} · {tag.parts} parts
                     </ThemedText>
                 </Pressable>
@@ -35,7 +36,7 @@ function TagRow({
                 accessibilityRole="button"
                 accessibilityLabel={`Remove ${tag.title} from ${folderName}`}
             >
-                <IconSymbol name="minus.circle" size={22} color={Colors.light.icon} />
+                <IconSymbol name="minus.circle" size={22} color={palette.icon} />
             </Pressable>
         </View>
     );
@@ -49,6 +50,7 @@ interface Loaded {
 
 /** One Folder's Tags, read from the device so that it works offline. */
 export default function FolderScreen() {
+    const palette = usePalette();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [outcome, setOutcome] = useState<Loaded | { id: string; failed: true } | null>(null);
     const current = outcome?.id === id ? outcome : null;
@@ -87,7 +89,7 @@ export default function FolderScreen() {
     return (
         <ThemedView style={styles.container}>
             <Stack.Screen options={{ title: loaded?.name ?? (failed ? "Folder" : "") }} />
-            {!loaded && !failed && <ActivityIndicator style={styles.status} />}
+            {!loaded && !failed && <ActivityIndicator style={styles.status} color={palette.accent} />}
             {failed && (
                 <ThemedText style={styles.status}>This Folder couldn&apos;t be opened.</ThemedText>
             )}
@@ -131,14 +133,10 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingRight: 16,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: "#ccc",
     },
     link: {
         flex: 1,
         paddingHorizontal: 16,
         paddingVertical: 12,
-    },
-    details: {
-        opacity: 0.7,
     },
 });

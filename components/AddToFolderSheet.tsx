@@ -5,9 +5,9 @@ import { FolderNameDialog } from "@/components/FolderNameDialog";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { Colors } from "@/constants/Colors";
 import type { FolderSummary } from "@/core";
 import { core } from "@/core/app";
+import { usePalette } from "@/hooks/usePalette";
 
 interface Choice extends FolderSummary {
     holdsTag: boolean;
@@ -19,6 +19,7 @@ interface Choice extends FolderSummary {
  * holding the Tag. Bookmarks is left to the Bookmark button.
  */
 export function AddToFolderSheet({ tagId, onClose }: { tagId: number; onClose: () => void }) {
+    const palette = usePalette();
     const [choices, setChoices] = useState<Choice[] | null>(null);
     const [naming, setNaming] = useState(false);
 
@@ -74,18 +75,22 @@ export function AddToFolderSheet({ tagId, onClose }: { tagId: number; onClose: (
 
     return (
         <Modal transparent animationType="slide" onRequestClose={onClose}>
-            <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
-            <ThemedView style={styles.sheet}>
+            <Pressable
+                style={[styles.backdrop, { backgroundColor: palette.scrim }]}
+                onPress={onClose}
+                accessibilityLabel="Close"
+            />
+            <ThemedView style={[styles.sheet, { backgroundColor: palette.surface }]}>
                 <View style={styles.header}>
                     <ThemedText type="subtitle">Add to folder</ThemedText>
                     <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button">
-                        <ThemedText type="defaultSemiBold" style={styles.tint}>
+                        <ThemedText type="defaultSemiBold" style={{ color: palette.accent }}>
                             Done
                         </ThemedText>
                     </Pressable>
                 </View>
                 {choices === null ? (
-                    <ActivityIndicator style={styles.row} />
+                    <ActivityIndicator style={styles.row} color={palette.accent} />
                 ) : (
                     <FlatList
                         data={choices}
@@ -101,7 +106,7 @@ export function AddToFolderSheet({ tagId, onClose }: { tagId: number; onClose: (
                                 <IconSymbol
                                     name={item.holdsTag ? "checkmark.square.fill" : "square"}
                                     size={24}
-                                    color={Colors.light.tint}
+                                    color={palette.accent}
                                 />
                                 <ThemedText style={styles.name}>{item.name}</ThemedText>
                             </Pressable>
@@ -115,9 +120,9 @@ export function AddToFolderSheet({ tagId, onClose }: { tagId: number; onClose: (
                                 <IconSymbol
                                     name="folder.badge.plus"
                                     size={24}
-                                    color={Colors.light.tint}
+                                    color={palette.accent}
                                 />
-                                <ThemedText style={[styles.name, styles.tint]}>
+                                <ThemedText style={[styles.name, { color: palette.accent }]}>
                                     New Folder…
                                 </ThemedText>
                             </Pressable>
@@ -132,7 +137,6 @@ export function AddToFolderSheet({ tagId, onClose }: { tagId: number; onClose: (
 const styles = StyleSheet.create({
     backdrop: {
         flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.4)",
     },
     sheet: {
         maxHeight: "60%",
@@ -155,8 +159,5 @@ const styles = StyleSheet.create({
     },
     name: {
         flex: 1,
-    },
-    tint: {
-        color: Colors.light.tint,
     },
 });

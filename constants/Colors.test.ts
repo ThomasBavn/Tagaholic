@@ -13,6 +13,10 @@ const BORDER_ON_SURFACE = 1.15;
 // strongest and weakest channels must differ by this much (out of 255).
 const MIN_ACCENT_CHROMA = 80;
 const ACCENT_VS_TEXT = 1.3;
+// The scrim behind sheets and dialogs is translucent black: dark enough to set the
+// sheet apart, light enough that the screen behind still shows through.
+const MIN_SCRIM_ALPHA = 0.3;
+const MAX_SCRIM_ALPHA = 0.7;
 
 describe.each(schemes)("The %s palette", (scheme) => {
     const palette = Colors[scheme];
@@ -61,6 +65,14 @@ describe.each(schemes)("The %s palette", (scheme) => {
         const [r, g, b] = hexToRgb(palette.accent);
         expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeGreaterThan(MIN_ACCENT_CHROMA);
         expect(contrastRatio(palette.accent, palette.text)).toBeGreaterThan(ACCENT_VS_TEXT);
+    });
+
+    it("has a scrim that dims the screen behind sheets and dialogs without hiding it", () => {
+        const match = /^rgba\(0, 0, 0, (0\.\d+)\)$/.exec(palette.scrim);
+        expect(match).not.toBeNull();
+        const alpha = Number(match![1]);
+        expect(alpha).toBeGreaterThanOrEqual(MIN_SCRIM_ALPHA);
+        expect(alpha).toBeLessThanOrEqual(MAX_SCRIM_ALPHA);
     });
 
     it("selects tabs and tints with the accent", () => {
