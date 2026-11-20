@@ -3,20 +3,15 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { type PaletteRole } from '@/constants/Colors';
+import { usePalette, useResolvedColorScheme } from '@/hooks/usePalette';
 
+/** A palette role, unless the caller overrides it for the current colour scheme. */
 export function useThemeColor(
   props: { light?: string; dark?: string },
-  colorName: keyof typeof Colors.light & keyof typeof Colors.dark
+  colorName: PaletteRole
 ) {
-  // useColorScheme() can also return null or 'unspecified'; treat those as light.
-  const theme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colorFromProps = props[theme];
-
-  if (colorFromProps) {
-    return colorFromProps;
-  } else {
-    return Colors[theme][colorName];
-  }
+  const override = props[useResolvedColorScheme()];
+  const palette = usePalette();
+  return override || palette[colorName];
 }
