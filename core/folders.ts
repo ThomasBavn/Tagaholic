@@ -115,7 +115,7 @@ export class Folders {
         });
     }
 
-    /** Applies a change to the stored Folders and saves them, after any change already under way. */
+    /** Applies a change to the stored Folders and saves it, after any change under way. */
     private change<T>(apply: (folders: StoredFolder[]) => T): Promise<T> {
         const change = this.changes.then(async () => {
             const folders = await this.all();

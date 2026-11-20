@@ -7,7 +7,7 @@ import { createTestPorts } from "@/core/testing";
 const fixture = (name: string) =>
     readFileSync(join(__dirname, "fixtures", name), "utf8");
 
-/** A core that has opened the given Tags, as the Singer does before filing them from the Tag page. */
+/** A core that has opened the given Tags, as the Singer does before filing them. */
 async function coreWithOpenedTags(...ids: number[]) {
     const ports = createTestPorts();
     const core = createCore(ports);
@@ -25,7 +25,9 @@ describe("The Singer's own Folders", () => {
         await core.createFolder("Chorus retreat 2026");
         await core.createFolder("Afterglow");
 
-        expect((await core.folders()).map((folder) => [folder.name, folder.builtIn, folder.tagCount])).toEqual([
+        const listed = await core.folders();
+
+        expect(listed.map((folder) => [folder.name, folder.builtIn, folder.tagCount])).toEqual([
             ["Bookmarks", true, 0],
             ["Chorus retreat 2026", false, 0],
             ["Afterglow", false, 0],
@@ -37,7 +39,10 @@ describe("The Singer's own Folders", () => {
 
         await core.createFolder("  Afterglow ");
 
-        expect((await core.folders()).map((folder) => folder.name)).toEqual(["Bookmarks", "Afterglow"]);
+        expect((await core.folders()).map((folder) => folder.name)).toEqual([
+            "Bookmarks",
+            "Afterglow",
+        ]);
     });
 
     it("must have a name", async () => {
