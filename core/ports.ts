@@ -3,7 +3,7 @@
  * so that behaviour lives in the core, where tests can reach it.
  */
 
-/** barbershoptags.com: sends API query parameters, returns the raw XML response. */
+/** barbershoptags.com: answers API queries with raw XML, and serves the files Tags link to. */
 export interface TagSource {
     query(params: Record<string, string>): Promise<string>;
     /** Downloads a file barbershoptags.com links to, such as a Tag's sheet music. */

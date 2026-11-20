@@ -1,6 +1,6 @@
 import { BOOKMARKS, Folders, type FolderSummary } from "./folders";
 import type { Ports } from "./ports";
-import { SavedTags, type CachedTag } from "./savedTags";
+import { TagCache, type CachedTag } from "./tagCache";
 import { searchQuery, SearchFailedError, type SearchRequest } from "./search";
 import {
     parseSearchResponse,
@@ -18,7 +18,7 @@ export { hasNextPage, SEARCH_PAGE_SIZE, SearchFailedError } from "./search";
 export type { PartCount, SearchOrder, SearchRequest } from "./search";
 export { BOOKMARKS } from "./folders";
 export type { FolderSummary } from "./folders";
-export type { CachedTag } from "./savedTags";
+export type { CachedTag } from "./tagCache";
 
 /** A search result, marked with whether the Singer has Bookmarked it. */
 export interface SearchHit extends TagSummary {
@@ -31,9 +31,9 @@ export interface Core {
     /** Marks Tags with whether they are Bookmarked now, e.g. to refresh results shown before a change. */
     markBookmarked(tags: TagSummary[]): Promise<SearchHit[]>;
     /**
-     * Fetches a Tag for the Tag page, saves it and its sheet music on the device, and records
+     * Fetches a Tag for the Tag page, caches it and its sheet music on the device, and records
      * when it was opened. The sheet music URL points at the copy on the device when there is one.
-     * When barbershoptags.com can't be reached, opens the copy saved on the device instead.
+     * When barbershoptags.com can't be reached, opens the copy cached on the device instead.
      */
     openTag(id: number): Promise<Tag>;
     /** The saved copy of a Tag the Singer has opened, or null if it was never opened. */
@@ -49,8 +49,8 @@ export interface Core {
 
 export function createCore({ tagSource, store, fileStore, clock }: Ports): Core {
     const folders = new Folders(store);
-    const savedTags = new SavedTags(store, fileStore, tagSource, clock);
-    const cachedTag = (id: number) => savedTags.get(id);
+    const tagCache = new TagCache(store, fileStore, tagSource, clock);
+    const cachedTag = (id: number) => tagCache.get(id);
 
     const markBookmarked = async (tags: TagSummary[]): Promise<SearchHit[]> => {
         const bookmarks = new Set((await folders.get(BOOKMARKS))?.tagIds);
@@ -82,16 +82,16 @@ export function createCore({ tagSource, store, fileStore, clock }: Ports): Core 
                 tag = parseTagResponse(xml);
             } catch (cause) {
                 // Offline, barbershoptags.com is down, or a Wi-Fi sign-in page answered.
-                const saved = await savedTags.reopen(id);
-                if (saved) return saved;
-                throw new Error(`Tag ${id} couldn't be fetched and isn't saved on the device`, {
+                const cached = await tagCache.reopen(id);
+                if (cached) return cached;
+                throw new Error(`Tag ${id} couldn't be fetched and isn't cached on the device`, {
                     cause,
                 });
             }
             if (!tag) {
                 throw new Error(`Tag ${id} isn't on barbershoptags.com`);
             }
-            return savedTags.refresh(tag);
+            return tagCache.refresh(tag);
         },
 
         cachedTag,

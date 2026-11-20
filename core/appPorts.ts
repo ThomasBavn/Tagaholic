@@ -9,7 +9,12 @@ const API_URL = "https://www.barbershoptags.com/api.php";
 const QUERY_TIMEOUT_MS = 10_000;
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 
-async function get(url: string, timeoutMs: number): Promise<Response> {
+/** Fetches from barbershoptags.com and reads the response, giving up after the timeout. */
+async function fetchFromBarbershopTags<T>(
+    url: string,
+    timeoutMs: number,
+    readBody: (response: Response) => Promise<T>,
+): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -17,7 +22,7 @@ async function get(url: string, timeoutMs: number): Promise<Response> {
         if (!response.ok) {
             throw new Error(`barbershoptags.com responded with ${response.status}`);
         }
-        return response;
+        return await readBody(response);
     } finally {
         clearTimeout(timer);
     }
@@ -25,15 +30,21 @@ async function get(url: string, timeoutMs: number): Promise<Response> {
 
 /** Calls the barbershoptags.com API directly (ADR 0001). */
 const barbershopTags: TagSource = {
-    async query(params) {
-        const response = await get(`${API_URL}?${new URLSearchParams(params)}`, QUERY_TIMEOUT_MS);
-        return response.text();
-    },
+    query: (params) =>
+        fetchFromBarbershopTags(
+            `${API_URL}?${new URLSearchParams(params)}`,
+            QUERY_TIMEOUT_MS,
+            (response) => response.text(),
+        ),
 
-    async download(url) {
-        const response = await get(url, DOWNLOAD_TIMEOUT_MS);
-        return new Uint8Array(await response.arrayBuffer());
-    },
+    download: (url) =>
+        fetchFromBarbershopTags(url, DOWNLOAD_TIMEOUT_MS, async (response) => {
+            // A Wi-Fi sign-in or error page must not replace sheet music already on the device.
+            if (response.headers.get("content-type")?.includes("text/html")) {
+                throw new Error(`barbershoptags.com sent a web page instead of the file at ${url}`);
+            }
+            return new Uint8Array(await response.arrayBuffer());
+        }),
 };
 
 const asyncStorage: Store = {
