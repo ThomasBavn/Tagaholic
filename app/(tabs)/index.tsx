@@ -35,6 +35,11 @@ function TagRow({ tag }: { tag: SearchHit }) {
                         {formatKey(tag.key)} · {tag.parts} parts · ★ {tag.rating.toFixed(1)}
                     </ThemedText>
                 </View>
+                {tag.inRepertoire && (
+                    <View accessible accessibilityLabel="In Repertoire">
+                        <IconSymbol name="music.note.list" size={22} color={Colors.light.tint} />
+                    </View>
+                )}
                 {tag.bookmarked && (
                     <View accessible accessibilityLabel="Bookmarked">
                         <IconSymbol name="bookmark.fill" size={22} color={Colors.light.tint} />
@@ -61,7 +66,7 @@ export default function SearchScreen() {
     /** Identifies the latest search, so that answers to older ones are ignored. */
     const latest = useRef(0);
 
-    // The Singer may change Bookmarks on a Tag page, so refresh the marks on coming back.
+    // The Singer may change Bookmarks and Sung Parts on a Tag page, so refresh the marks on coming back.
     const shown = useRef(tags);
     useEffect(() => {
         shown.current = tags;
@@ -71,7 +76,7 @@ export default function SearchScreen() {
             let active = true;
             const before = shown.current;
             if (before.length === 0) return;
-            core.markBookmarked(before).then(
+            core.markStatus(before).then(
                 (marked) => {
                     // Skip if a search replaced the results meanwhile.
                     if (active && shown.current === before) setTags(marked);

@@ -152,6 +152,19 @@ describe("Deleting a Folder", () => {
         expect(await core.cachedTag(6415)).not.toBeNull();
     });
 
+    it("leaves its Tags' Sung Parts and their place in the Repertoire alone", async () => {
+        const { core } = await coreWithOpenedTags(2462);
+        const retreat = await core.createFolder("Chorus retreat 2026");
+        await core.addToFolder(retreat, 2462);
+        await core.toggleSungPart(2462, "Lead");
+        await core.toggleSungPart(2462, "Baritone");
+
+        await core.deleteFolder(retreat);
+
+        expect(await core.sungParts(2462)).toEqual(["Lead", "Baritone"]);
+        expect((await core.repertoire()).map((entry) => entry.tag.id)).toEqual([2462]);
+    });
+
     it("never lets a later Folder take its id", async () => {
         const { core } = await coreWithOpenedTags();
         await core.createFolder("Chorus retreat 2026");
