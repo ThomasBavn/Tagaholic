@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { PartChips } from "@/components/PartChips";
 import { PitchControls } from "@/components/PitchControls";
 import { SheetMusicViewer } from "@/components/SheetMusicViewer";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
-import type { Tag } from "@/core";
+import { partsOf, type Part, type Tag } from "@/core";
 import { core } from "@/core/app";
 
 /** The Tag page: a stack screen any tab can open with `/tag/<id>`. */
@@ -46,6 +47,28 @@ export default function TagScreen() {
         );
     };
 
+    // Like the outcome, remembers which id it belongs to.
+    const [sung, setSung] = useState<{ id: string; parts: Part[] } | null>(null);
+    const sungParts = sung?.id === id ? sung.parts : null;
+
+    useEffect(() => {
+        let active = true;
+        core.sungParts(Number(id)).then(
+            (parts) => active && setSung({ id, parts }),
+            (error) => console.error(error),
+        );
+        return () => {
+            active = false;
+        };
+    }, [id]);
+
+    const toggleSungPart = (part: Part) => {
+        core.toggleSungPart(Number(id), part).then(
+            (parts) => setSung({ id, parts }),
+            (error) => console.error(error),
+        );
+    };
+
     useEffect(() => {
         let active = true;
         core.openTag(Number(id)).then(
@@ -77,6 +100,16 @@ export default function TagScreen() {
                 <ThemedText style={styles.status}>
                     This Tag couldn&apos;t be opened. Please try again.
                 </ThemedText>
+            )}
+            {tag && sungParts && (
+                // Shown once the Tag has opened, since Sung Parts are marked on the saved copy.
+                <PartChips
+                    label="Sung Parts"
+                    role="switch"
+                    options={partsOf(tag.parts)}
+                    isSelected={(part) => sungParts.includes(part)}
+                    onPress={toggleSungPart}
+                />
             )}
             {tag && <SheetMusicViewer sheetMusic={tag.sheetMusic} />}
             {tag?.pitch && (

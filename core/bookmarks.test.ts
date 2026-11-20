@@ -142,7 +142,7 @@ describe("Bookmarked status in search results", () => {
         const result = await core.search({ text: "eyes" });
         await core.toggleBookmark(2462);
 
-        const refreshed = await core.markBookmarked(result.tags);
+        const refreshed = await core.markStatus(result.tags);
 
         expect(refreshed.map((tag) => [tag.id, tag.bookmarked])).toEqual([
             [2462, true],
