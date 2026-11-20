@@ -1,12 +1,14 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PitchControls } from "@/components/PitchControls";
 import { SheetMusicViewer } from "@/components/SheetMusicViewer";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import { Colors } from "@/constants/Colors";
 import type { Tag } from "@/core";
 import { core } from "@/core/app";
 
@@ -22,6 +24,27 @@ export default function TagScreen() {
     const tag = current && "tag" in current ? current.tag : null;
     const failed = current !== null && "failed" in current;
     const insets = useSafeAreaInsets();
+    // Like the outcome, remembers which id it belongs to.
+    const [bookmark, setBookmark] = useState<{ id: string; bookmarked: boolean } | null>(null);
+    const bookmarked = bookmark?.id === id ? bookmark.bookmarked : null;
+
+    useEffect(() => {
+        let active = true;
+        core.isBookmarked(Number(id)).then(
+            (value) => active && setBookmark({ id, bookmarked: value }),
+            (error) => console.error(error),
+        );
+        return () => {
+            active = false;
+        };
+    }, [id]);
+
+    const toggleBookmark = () => {
+        core.toggleBookmark(Number(id)).then(
+            (value) => setBookmark({ id, bookmarked: value }),
+            (error) => console.error(error),
+        );
+    };
 
     useEffect(() => {
         let active = true;
@@ -39,7 +62,16 @@ export default function TagScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <Stack.Screen options={{ title: `#${id}` }} />
+            <Stack.Screen
+                options={{
+                    title: `#${id}`,
+                    // Shown once the Tag has opened, so that it is saved on the device first.
+                    headerRight: () =>
+                        tag && bookmarked !== null ? (
+                            <BookmarkButton bookmarked={bookmarked} onPress={toggleBookmark} />
+                        ) : null,
+                }}
+            />
             {!tag && !failed && <ActivityIndicator style={styles.status} />}
             {failed && (
                 <ThemedText style={styles.status}>
@@ -62,6 +94,31 @@ export default function TagScreen() {
     );
 }
 
+function BookmarkButton({
+    bookmarked,
+    onPress,
+}: {
+    bookmarked: boolean;
+    onPress: () => void;
+}) {
+    return (
+        <Pressable
+            onPress={onPress}
+            hitSlop={8}
+            style={styles.bookmark}
+            accessibilityRole="switch"
+            accessibilityLabel="Bookmark"
+            accessibilityState={{ checked: bookmarked }}
+        >
+            <IconSymbol
+                name={bookmarked ? "bookmark.fill" : "bookmark"}
+                size={26}
+                color={Colors.light.tint}
+            />
+        </Pressable>
+    );
+}
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -71,5 +128,8 @@ const styles = StyleSheet.create({
     },
     pitch: {
         position: "absolute",
+    },
+    bookmark: {
+        paddingRight: 16,
     },
 });

@@ -27,6 +27,7 @@ export default function RootLayout() {
                 <Stack>
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                     <Stack.Screen name="tag/[id]" options={{ title: "Tag" }} />
+                    <Stack.Screen name="folder/[id]" options={{ title: "Folder" }} />
                     <Stack.Screen name="+not-found" />
                 </Stack>
             </GestureHandlerRootView>
