@@ -6,6 +6,13 @@ const schemes: ColorScheme[] = ["light", "dark"];
 // WCAG AA: 4.5:1 for body text, 3:1 for icons, large text and control outlines.
 const TEXT = 4.5;
 const ICON = 3;
+// Hairline dividers only need to be visible, not readable.
+const BORDER_ON_BACKGROUND = 1.3;
+const BORDER_ON_SURFACE = 1.15;
+// The accent mustn't be a grey such as the old plain-white dark tint: its
+// strongest and weakest channels must differ by this much (out of 255).
+const MIN_ACCENT_CHROMA = 80;
+const ACCENT_VS_TEXT = 1.3;
 
 describe.each(schemes)("The %s palette", (scheme) => {
     const palette = Colors[scheme];
@@ -38,8 +45,12 @@ describe.each(schemes)("The %s palette", (scheme) => {
     });
 
     it("has a border that shows against the background and surface", () => {
-        expect(contrastRatio(palette.border, palette.background)).toBeGreaterThanOrEqual(1.3);
-        expect(contrastRatio(palette.border, palette.surface)).toBeGreaterThanOrEqual(1.15);
+        expect(contrastRatio(palette.border, palette.background)).toBeGreaterThanOrEqual(
+            BORDER_ON_BACKGROUND,
+        );
+        expect(contrastRatio(palette.border, palette.surface)).toBeGreaterThanOrEqual(
+            BORDER_ON_SURFACE,
+        );
     });
 
     it("has a surface that sets cards and inputs apart from the background", () => {
@@ -48,8 +59,8 @@ describe.each(schemes)("The %s palette", (scheme) => {
 
     it("has a coloured accent, distinct from the text colour", () => {
         const [r, g, b] = hexToRgb(palette.accent);
-        expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeGreaterThan(80);
-        expect(contrastRatio(palette.accent, palette.text)).toBeGreaterThan(1.3);
+        expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeGreaterThan(MIN_ACCENT_CHROMA);
+        expect(contrastRatio(palette.accent, palette.text)).toBeGreaterThan(ACCENT_VS_TEXT);
     });
 
     it("selects tabs and tints with the accent", () => {

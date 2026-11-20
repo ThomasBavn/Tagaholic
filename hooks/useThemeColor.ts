@@ -3,13 +3,15 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors, type PaletteRole } from '@/constants/Colors';
-import { useResolvedColorScheme } from '@/hooks/usePalette';
+import { type PaletteRole } from '@/constants/Colors';
+import { usePalette, useResolvedColorScheme } from '@/hooks/usePalette';
 
+/** A palette role, unless the caller overrides it for the current colour scheme. */
 export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: PaletteRole
 ) {
-  const theme = useResolvedColorScheme();
-  return props[theme] || Colors[theme][colorName];
+  const override = props[useResolvedColorScheme()];
+  const palette = usePalette();
+  return override || palette[colorName];
 }
