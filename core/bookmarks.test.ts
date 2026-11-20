@@ -62,6 +62,19 @@ describe("Bookmarking", () => {
         expect(await core.isBookmarked(1786)).toBe(true);
     });
 
+    it("Bookmarks and un-Bookmarks a Tag that has Sung Parts without touching them", async () => {
+        const { core } = await coreWithOpenedTags(2462);
+        await core.toggleSungPart(2462, "Bass");
+
+        await core.toggleBookmark(2462);
+        expect(await core.isBookmarked(2462)).toBe(true);
+        expect(await core.sungParts(2462)).toEqual(["Bass"]);
+
+        await core.toggleBookmark(2462);
+        expect(await core.isBookmarked(2462)).toBe(false);
+        expect(await core.sungParts(2462)).toEqual(["Bass"]);
+    });
+
     it("keeps Bookmarks for a fresh core on the same Store, as after restarting the app", async () => {
         const { ports, core } = await coreWithOpenedTags(2462, 6415);
         await core.toggleBookmark(2462);

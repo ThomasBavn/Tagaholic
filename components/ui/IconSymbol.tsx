@@ -26,6 +26,12 @@ const MAPPING = {
     "music.note.list": "library-music",
     bookmark: "bookmark-border",
     "bookmark.fill": "bookmark",
+    "folder.badge.plus": "create-new-folder",
+    pencil: "edit",
+    trash: "delete-outline",
+    "minus.circle": "remove-circle-outline",
+    "checkmark.square.fill": "check-box",
+    square: "check-box-outline-blank",
 } as IconMapping;
 
 /**

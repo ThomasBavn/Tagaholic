@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AddToFolderSheet } from "@/components/AddToFolderSheet";
 import { PartChips } from "@/components/PartChips";
 import { PitchControls } from "@/components/PitchControls";
 import { SheetMusicViewer } from "@/components/SheetMusicViewer";
@@ -28,6 +29,7 @@ export default function TagScreen() {
     // Like the outcome, remembers which id it belongs to.
     const [bookmark, setBookmark] = useState<{ id: string; bookmarked: boolean } | null>(null);
     const bookmarked = bookmark?.id === id ? bookmark.bookmarked : null;
+    const [filing, setFiling] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -91,10 +93,16 @@ export default function TagScreen() {
                     // Shown once the Tag has opened, so that it is saved on the device first.
                     headerRight: () =>
                         tag && bookmarked !== null ? (
-                            <BookmarkButton bookmarked={bookmarked} onPress={toggleBookmark} />
+                            <View style={styles.headerButtons}>
+                                <AddToFolderButton onPress={() => setFiling(true)} />
+                                <BookmarkButton bookmarked={bookmarked} onPress={toggleBookmark} />
+                            </View>
                         ) : null,
                 }}
             />
+            {filing && tag && (
+                <AddToFolderSheet tagId={tag.id} onClose={() => setFiling(false)} />
+            )}
             {/* The page is landscape, so its content keeps clear of a notch or navigation bar on either side. */}
             <View
                 style={[
@@ -136,6 +144,19 @@ export default function TagScreen() {
     );
 }
 
+function AddToFolderButton({ onPress }: { onPress: () => void }) {
+    return (
+        <Pressable
+            onPress={onPress}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Add to folder…"
+        >
+            <IconSymbol name="folder.badge.plus" size={26} color={Colors.light.tint} />
+        </Pressable>
+    );
+}
+
 function BookmarkButton({
     bookmarked,
     onPress,
@@ -147,7 +168,6 @@ function BookmarkButton({
         <Pressable
             onPress={onPress}
             hitSlop={8}
-            style={styles.bookmark}
             accessibilityRole="switch"
             accessibilityLabel="Bookmark"
             accessibilityState={{ checked: bookmarked }}
@@ -174,7 +194,10 @@ const styles = StyleSheet.create({
     pitch: {
         position: "absolute",
     },
-    bookmark: {
+    headerButtons: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 20,
         paddingRight: 16,
     },
 });
