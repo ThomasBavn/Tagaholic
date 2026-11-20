@@ -6,20 +6,24 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { Colors } from "@/constants/Colors";
 import type { FolderSummary } from "@/core";
 import { core } from "@/core/app";
+import { usePalette } from "@/hooks/usePalette";
 
 const tagCount = (count: number) => (count === 1 ? "1 Tag" : `${count} Tags`);
 
 function FolderRow({ folder }: { folder: FolderSummary }) {
+    const palette = usePalette();
     return (
         <Link href={{ pathname: "/folder/[id]", params: { id: folder.id } }} asChild>
-            <Pressable style={styles.row} accessibilityRole="link">
+            <Pressable
+                style={[styles.row, { borderBottomColor: palette.border }]}
+                accessibilityRole="link"
+            >
                 <IconSymbol
                     name={folder.builtIn ? "bookmark.fill" : "folder.fill"}
                     size={24}
-                    color={Colors.light.tint}
+                    color={palette.accent}
                 />
                 <ThemedText type="defaultSemiBold" style={styles.name}>
                     {folder.name}
@@ -82,7 +86,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: "#ccc",
     },
     name: {
         flex: 1,

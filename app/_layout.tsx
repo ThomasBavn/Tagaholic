@@ -1,14 +1,15 @@
-import { DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
+import { ThemeProvider } from "expo-router/react-navigation";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/useColorScheme";
+import { navigationTheme } from "@/constants/Colors";
+import { useResolvedColorScheme } from "@/hooks/usePalette";
 
 export default function RootLayout() {
-    const colorScheme = useColorScheme();
+    const colorScheme = useResolvedColorScheme();
     const [loaded] = useFonts({
         SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     });
@@ -19,10 +20,7 @@ export default function RootLayout() {
     }
 
     return (
-        <ThemeProvider
-            // value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-            value={DefaultTheme}
-        >
+        <ThemeProvider value={navigationTheme(colorScheme)}>
             <GestureHandlerRootView style={{ flex: 1 }}>
                 <Stack>
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -31,7 +29,8 @@ export default function RootLayout() {
                     <Stack.Screen name="+not-found" />
                 </Stack>
             </GestureHandlerRootView>
-            <StatusBar style="auto" />
+            {/* Dark icons on the light background, light icons on the dark one. */}
+            <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         </ThemeProvider>
     );
 }
