@@ -2,6 +2,7 @@ import { BOOKMARKS, Folders, type FolderSummary } from "./folders";
 import type { Ports } from "./ports";
 import { TagCache, type CachedTag } from "./tagCache";
 import { searchQuery, SearchFailedError, type SearchRequest } from "./search";
+import { partsOf, SungParts, type Part } from "./sungParts";
 import {
     parseSearchResponse,
     parseTagResponse,
@@ -18,18 +19,31 @@ export { hasNextPage, SEARCH_PAGE_SIZE, SearchFailedError } from "./search";
 export type { PartCount, SearchOrder, SearchRequest } from "./search";
 export { BOOKMARKS } from "./folders";
 export type { FolderSummary } from "./folders";
+export { partsOf } from "./sungParts";
+export type { Part } from "./sungParts";
 export type { CachedTag } from "./tagCache";
 
-/** A search result, marked with whether the Singer has Bookmarked it. */
+/** A search result, marked with whether the Singer has Bookmarked it and whether it is in the Repertoire. */
 export interface SearchHit extends TagSummary {
     bookmarked: boolean;
+    inRepertoire: boolean;
+}
+
+/** A Tag in the Repertoire, with the Parts the Singer has sung on it. */
+export interface RepertoireEntry {
+    tag: Tag;
+    /** In Part order, never empty. */
+    sungParts: Part[];
 }
 
 /** Tagaholic's domain behaviour. Screens call this and render what it returns. */
 export interface Core {
     search(request: SearchRequest): Promise<SearchResult<SearchHit>>;
-    /** Marks Tags with whether they are Bookmarked now, e.g. to refresh results shown before a change. */
-    markBookmarked(tags: TagSummary[]): Promise<SearchHit[]>;
+    /**
+     * Marks Tags with whether they are Bookmarked and in the Repertoire now, e.g. to refresh
+     * results shown before a change.
+     */
+    markStatus(tags: TagSummary[]): Promise<SearchHit[]>;
     /**
      * Fetches a Tag for the Tag page, caches it and its sheet music on the device, and records
      * when it was opened. The sheet music URL points at the copy on the device when there is one.
@@ -45,16 +59,40 @@ export interface Core {
     folders(): Promise<FolderSummary[]>;
     /** The Tags in a Folder, in the order they were added, read from the copies saved on the device. */
     folderTags(folderId: string): Promise<Tag[]>;
+    /** The Parts the Singer has sung on a Tag, in Part order. */
+    sungParts(id: number): Promise<Part[]>;
+    /**
+     * Marks a Part as sung on a Tag the Singer has opened, or clears it, which may move the Tag
+     * into or out of the Repertoire. Returns the Tag's Sung Parts afterwards.
+     */
+    toggleSungPart(id: number, part: Part): Promise<Part[]>;
+    /**
+     * Every Tag with at least one Sung Part, in the order they joined the Repertoire, read from
+     * the copies saved on the device. Given a Part, only the Tags on which it is a Sung Part.
+     */
+    repertoire(part?: Part): Promise<RepertoireEntry[]>;
+    /** Every Part that is a Sung Part on some Tag in the Repertoire, in Part order, to filter it by. */
+    repertoireParts(): Promise<Part[]>;
 }
 
 export function createCore({ tagSource, store, fileStore, clock }: Ports): Core {
     const folders = new Folders(store);
+    const sungParts = new SungParts(store);
     const tagCache = new TagCache(store, fileStore, tagSource, clock);
     const cachedTag = (id: number) => tagCache.get(id);
 
-    const markBookmarked = async (tags: TagSummary[]): Promise<SearchHit[]> => {
-        const bookmarks = new Set((await folders.get(BOOKMARKS))?.tagIds);
-        return tags.map((tag) => ({ ...tag, bookmarked: bookmarks.has(tag.id) }));
+    const markStatus = async (tags: TagSummary[]): Promise<SearchHit[]> => {
+        const [bookmarks, repertoireIds] = await Promise.all([
+            folders.get(BOOKMARKS),
+            sungParts.tagIds(),
+        ]);
+        const bookmarked = new Set(bookmarks?.tagIds);
+        const inRepertoire = new Set(repertoireIds);
+        return tags.map((tag) => ({
+            ...tag,
+            bookmarked: bookmarked.has(tag.id),
+            inRepertoire: inRepertoire.has(tag.id),
+        }));
     };
 
     return {
@@ -63,13 +101,13 @@ export function createCore({ tagSource, store, fileStore, clock }: Ports): Core 
             const query = searchQuery(request);
             try {
                 const result = parseSearchResponse(await tagSource.query(query));
-                return { available: result.available, tags: await markBookmarked(result.tags) };
+                return { available: result.available, tags: await markStatus(result.tags) };
             } catch (cause) {
                 throw new SearchFailedError(cause);
             }
         },
 
-        markBookmarked,
+        markStatus,
 
         async openTag(id) {
             let tag: Tag | null;
@@ -110,5 +148,26 @@ export function createCore({ tagSource, store, fileStore, clock }: Ports): Core 
             // mean it was added without being opened; there is nothing to show for it.
             return cached.flatMap((entry) => (entry ? [entry.tag] : []));
         },
+
+        sungParts: (id) => sungParts.of(id),
+
+        async toggleSungPart(id, part) {
+            const cached = await cachedTag(id);
+            if (!cached) throw new Error(`Tag ${id} hasn't been opened, so its Parts aren't known`);
+            return sungParts.toggle(id, part, partsOf(cached.tag.parts));
+        },
+
+        async repertoire(part) {
+            const entries = await sungParts.withPart(part);
+            const cached = await Promise.all(entries.map((entry) => cachedTag(entry.tagId)));
+            // A Tag in the Repertoire is never evicted from the device, and Sung Parts can only be
+            // marked on an opened Tag, so a missing copy would be a bug; there is nothing to show for it.
+            return entries.flatMap((entry, index) => {
+                const copy = cached[index];
+                return copy ? [{ tag: copy.tag, sungParts: entry.parts }] : [];
+            });
+        },
+
+        repertoireParts: () => sungParts.sungAnywhere(),
     };
 }

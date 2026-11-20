@@ -24,9 +24,9 @@ describe("Searching Tags", () => {
 
         expect(result.available).toBe(148);
         expect(result.tags).toEqual([
-            { id: 2462, title: "A Million Stars", key: "Major:Gb", parts: 4, rating: 3.3926, bookmarked: false },
-            { id: 4044, title: "A Million Stars", key: "Major:Gb", parts: 4, rating: 3.2565, bookmarked: false },
-            { id: 2527, title: "A Sight For Sore Eyes", key: "Major:C", parts: 4, rating: 3.2788, bookmarked: false },
+            { id: 2462, title: "A Million Stars", key: "Major:Gb", parts: 4, rating: 3.3926, bookmarked: false, inRepertoire: false },
+            { id: 4044, title: "A Million Stars", key: "Major:Gb", parts: 4, rating: 3.2565, bookmarked: false, inRepertoire: false },
+            { id: 2527, title: "A Sight For Sore Eyes", key: "Major:C", parts: 4, rating: 3.2788, bookmarked: false, inRepertoire: false },
         ]);
     });
 
@@ -55,6 +55,7 @@ describe("Searching Tags", () => {
                 parts: 4,
                 rating: 3.244,
                 bookmarked: false,
+                inRepertoire: false,
             },
         ]);
     });
