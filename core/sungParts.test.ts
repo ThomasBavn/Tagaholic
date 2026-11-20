@@ -250,6 +250,42 @@ describe("The Repertoire", () => {
     });
 });
 
+describe("The Parts to filter the Repertoire by", () => {
+    it("are none while the Repertoire is empty", async () => {
+        const { core } = await coreWithOpenedTags(2462);
+
+        expect(await core.repertoireParts()).toEqual([]);
+    });
+
+    it("are every Sung Part in the Repertoire, once each, in Part order", async () => {
+        const { core } = await coreWithOpenedTags(2462, 6415, 1540, 3716);
+        await core.toggleSungPart(1540, "6th Part");
+        await core.toggleSungPart(3716, "2nd Part");
+        await core.toggleSungPart(2462, "Bass");
+        await core.toggleSungPart(6415, "Bass");
+        await core.toggleSungPart(6415, "Tenor");
+        await core.toggleSungPart(3716, "1st Part");
+
+        expect(await core.repertoireParts()).toEqual([
+            "Tenor",
+            "Bass",
+            "6th Part",
+            "1st Part",
+            "2nd Part",
+        ]);
+    });
+
+    it("drop a Part once no Tag has it as a Sung Part", async () => {
+        const { core } = await coreWithOpenedTags(2462);
+        await core.toggleSungPart(2462, "Lead");
+        await core.toggleSungPart(2462, "Bass");
+
+        await core.toggleSungPart(2462, "Lead");
+
+        expect(await core.repertoireParts()).toEqual(["Bass"]);
+    });
+});
+
 describe("Repertoire status in search results", () => {
     it("marks which results are in the Repertoire", async () => {
         const { ports, core } = await coreWithOpenedTags(2462);

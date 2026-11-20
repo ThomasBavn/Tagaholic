@@ -31,6 +31,18 @@ export function partsOf(partCount: number): Part[] {
     ];
 }
 
+/**
+ * Puts Parts in order: Tenor, Lead, Baritone, Bass and the extra numbered Parts of larger
+ * Tags, then the 1st, 2nd and 3rd Part of 3-part Tags.
+ */
+function partRank(part: Part): number {
+    const standard = STANDARD_PARTS.indexOf(part);
+    if (standard >= 0) return standard;
+    const number = parseInt(part, 10);
+    // Numbered Parts below 5th only exist on Tags with fewer than 4 parts.
+    return number > STANDARD_PARTS.length ? number : 1000 + number;
+}
+
 /** One Tag's Sung Parts as kept on the device. */
 interface StoredSungParts {
     tagId: number;
@@ -50,13 +62,34 @@ export class SungParts {
 
     constructor(private readonly store: Store) {}
 
-    async all(): Promise<StoredSungParts[]> {
+    private async all(): Promise<StoredSungParts[]> {
         const json = await this.store.get(SUNG_PARTS_KEY);
         return json === null ? [] : (JSON.parse(json) as StoredSungParts[]);
     }
 
     async of(tagId: number): Promise<Part[]> {
         return (await this.all()).find((entry) => entry.tagId === tagId)?.parts ?? [];
+    }
+
+    /** The Tags in the Repertoire, in the order they joined it. */
+    async tagIds(): Promise<number[]> {
+        return (await this.all()).map((entry) => entry.tagId);
+    }
+
+    /**
+     * The Tags in the Repertoire with their Sung Parts, in the order they joined it.
+     * Given a Part, only the Tags on which it is a Sung Part.
+     */
+    async withPart(part?: Part): Promise<StoredSungParts[]> {
+        return (await this.all()).filter(
+            (entry) => part === undefined || entry.parts.includes(part),
+        );
+    }
+
+    /** Every Part that is a Sung Part on some Tag, once each, in Part order. */
+    async sungAnywhere(): Promise<Part[]> {
+        const parts = new Set((await this.all()).flatMap((entry) => entry.parts));
+        return [...parts].sort((a, b) => partRank(a) - partRank(b));
     }
 
     /**

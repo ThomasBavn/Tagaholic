@@ -72,6 +72,8 @@ export interface Core {
      * the copies saved on the device. Given a Part, only the Tags on which it is a Sung Part.
      */
     repertoire(part?: Part): Promise<RepertoireEntry[]>;
+    /** Every Part that is a Sung Part on some Tag in the Repertoire, in Part order, to filter it by. */
+    repertoireParts(): Promise<Part[]>;
 }
 
 const cacheKey = (id: number) => `tag:${id}`;
@@ -86,9 +88,12 @@ export function createCore({ tagSource, store, clock }: Ports): Core {
     };
 
     const markStatus = async (tags: TagSummary[]): Promise<SearchHit[]> => {
-        const [bookmarks, sung] = await Promise.all([folders.get(BOOKMARKS), sungParts.all()]);
+        const [bookmarks, repertoireIds] = await Promise.all([
+            folders.get(BOOKMARKS),
+            sungParts.tagIds(),
+        ]);
         const bookmarked = new Set(bookmarks?.tagIds);
-        const inRepertoire = new Set(sung.map((entry) => entry.tagId));
+        const inRepertoire = new Set(repertoireIds);
         return tags.map((tag) => ({
             ...tag,
             bookmarked: bookmarked.has(tag.id),
@@ -151,9 +156,7 @@ export function createCore({ tagSource, store, clock }: Ports): Core {
         },
 
         async repertoire(part) {
-            const entries = (await sungParts.all()).filter(
-                (entry) => part === undefined || entry.parts.includes(part),
-            );
+            const entries = await sungParts.withPart(part);
             const cached = await Promise.all(entries.map((entry) => cachedTag(entry.tagId)));
             // A Tag in the Repertoire is never evicted from the device, and Sung Parts can only be
             // marked on an opened Tag, so a missing copy would be a bug; there is nothing to show for it.
@@ -162,5 +165,7 @@ export function createCore({ tagSource, store, clock }: Ports): Core {
                 return copy ? [{ tag: copy.tag, sungParts: entry.parts }] : [];
             });
         },
+
+        repertoireParts: () => sungParts.sungAnywhere(),
     };
 }

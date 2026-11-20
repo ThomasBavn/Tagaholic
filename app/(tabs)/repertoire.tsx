@@ -12,20 +12,6 @@ import { core } from "@/core/app";
 
 const ALL = "All";
 
-const STANDARD_PARTS = ["Tenor", "Lead", "Baritone", "Bass"];
-
-/** Tenor, Lead, Baritone and Bass first, then the numbered Parts by number. */
-const partRank = (part: Part) => {
-    const standard = STANDARD_PARTS.indexOf(part);
-    return standard >= 0 ? standard : STANDARD_PARTS.length + parseInt(part, 10);
-};
-
-/** Every Part that is a Sung Part on some Tag in the Repertoire, to filter by. */
-function sungPartsIn(entries: RepertoireEntry[]): Part[] {
-    const parts = new Set(entries.flatMap((entry) => entry.sungParts));
-    return [...parts].sort((a, b) => partRank(a) - partRank(b));
-}
-
 function EntryRow({ entry }: { entry: RepertoireEntry }) {
     const { tag, sungParts } = entry;
     return (
@@ -53,17 +39,16 @@ export default function RepertoireScreen() {
     useFocusEffect(
         useCallback(() => {
             let active = true;
-            Promise.all([core.repertoire(), filter === null ? null : core.repertoire(filter)]).then(
-                ([all, filtered]) => {
+            Promise.all([core.repertoireParts(), core.repertoire(filter ?? undefined)]).then(
+                ([parts, entries]) => {
                     if (!active) return;
-                    const parts = sungPartsIn(all);
                     // The last Tag with this Sung Part may have left the Repertoire.
                     if (filter !== null && !parts.includes(filter)) {
                         setFilter(null);
                         return;
                     }
                     setFailed(false);
-                    setLoaded({ filter, parts, entries: filtered ?? all });
+                    setLoaded({ filter, parts, entries });
                 },
                 (error) => {
                     console.error(error);
