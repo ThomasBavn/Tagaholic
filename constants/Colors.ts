@@ -26,6 +26,8 @@ export const Colors = {
         accent: accentLight,
         /** Text and icons drawn on the accent. */
         onAccent: "#ffffff",
+        /** Dims the screen behind sheets and dialogs. */
+        scrim: "rgba(0, 0, 0, 0.4)",
         /** Same as accent; kept for screens not yet moved to the palette roles. */
         tint: accentLight,
         icon: "#687076",
@@ -40,6 +42,8 @@ export const Colors = {
         border: "#3E454B",
         accent: accentDark,
         onAccent: "#0B1A20",
+        // Darker than in light mode, or it barely shows over the dark screens.
+        scrim: "rgba(0, 0, 0, 0.6)",
         tint: accentDark,
         icon: "#9BA1A6",
         tabIconDefault: "#9BA1A6",

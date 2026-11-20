@@ -3,8 +3,7 @@ import { Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { Colors } from "@/constants/Colors";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { usePalette } from "@/hooks/usePalette";
 
 /**
  * Asks the Singer for a Folder name, to create or rename a Folder. It reads `initialName`
@@ -24,7 +23,7 @@ export function FolderNameDialog({
     onCancel: () => void;
 }) {
     const [name, setName] = useState(initialName);
-    const textColor = useThemeColor({}, "text");
+    const palette = usePalette();
     const canConfirm = name.trim() !== "";
     const confirm = () => {
         if (canConfirm) onConfirm(name);
@@ -32,23 +31,26 @@ export function FolderNameDialog({
 
     return (
         <Modal transparent animationType="fade" onRequestClose={onCancel}>
-            <View style={styles.backdrop}>
-                <ThemedView style={styles.dialog}>
+            <View style={[styles.backdrop, { backgroundColor: palette.scrim }]}>
+                <ThemedView style={[styles.dialog, { backgroundColor: palette.surface }]}>
                     <ThemedText type="subtitle">{title}</ThemedText>
                     <TextInput
                         value={name}
                         onChangeText={setName}
                         onSubmitEditing={confirm}
                         placeholder="Folder name"
-                        placeholderTextColor="#888"
+                        placeholderTextColor={palette.mutedText}
                         autoFocus
                         returnKeyType="done"
                         accessibilityLabel="Folder name"
-                        style={[styles.input, { color: textColor }]}
+                        style={[
+                            styles.input,
+                            { color: palette.text, borderBottomColor: palette.border },
+                        ]}
                     />
                     <View style={styles.buttons}>
                         <Pressable onPress={onCancel} hitSlop={8} accessibilityRole="button">
-                            <ThemedText style={styles.button}>Cancel</ThemedText>
+                            <ThemedText style={{ color: palette.accent }}>Cancel</ThemedText>
                         </Pressable>
                         <Pressable
                             onPress={confirm}
@@ -59,7 +61,7 @@ export function FolderNameDialog({
                         >
                             <ThemedText
                                 type="defaultSemiBold"
-                                style={[styles.button, !canConfirm && styles.disabled]}
+                                style={[{ color: palette.accent }, !canConfirm && styles.disabled]}
                             >
                                 {confirmLabel}
                             </ThemedText>
@@ -76,7 +78,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         padding: 24,
-        backgroundColor: "rgba(0, 0, 0, 0.4)",
     },
     dialog: {
         gap: 16,
@@ -85,7 +86,6 @@ const styles = StyleSheet.create({
     },
     input: {
         borderBottomWidth: 1,
-        borderBottomColor: Colors.light.tint,
         paddingVertical: 8,
         fontSize: 16,
     },
@@ -93,9 +93,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "flex-end",
         gap: 24,
-    },
-    button: {
-        color: Colors.light.tint,
     },
     disabled: {
         opacity: 0.4,
