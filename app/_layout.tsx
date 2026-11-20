@@ -24,8 +24,8 @@ export default function RootLayout() {
             value={DefaultTheme}
         >
             <GestureHandlerRootView style={{ flex: 1 }}>
-                {/* Every screen is portrait, as app.json says, except the Tag page. A screen
-                    must name its orientation: one without lets the phone rotate freely. */}
+                {/* Every screen is upright portrait except the Tag page. Each screen must name
+                    its orientation: one without lets the phone rotate freely. */}
                 <Stack screenOptions={{ orientation: "portrait_up" }}>
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                     {/* Landscape from the moment it opens, whatever the sheet music is,

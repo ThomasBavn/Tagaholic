@@ -72,7 +72,7 @@ export default function TagScreen() {
                         ) : null,
                 }}
             />
-            {/* The page is landscape, so keeps clear of a notch or navigation bar on either side. */}
+            {/* The page is landscape, so its content keeps clear of a notch or navigation bar on either side. */}
             <View
                 style={[
                     styles.content,
