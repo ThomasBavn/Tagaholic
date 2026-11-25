@@ -69,7 +69,3 @@ docs/         Development notes and architecture decision records
 - [GLOSSARY.md](GLOSSARY.md): the domain language.
 - [docs/development.md](docs/development.md): building, running and testing.
 - [docs/adr/](docs/adr/): why things are the way they are, such as [calling the barbershoptags.com API directly](docs/adr/0001-call-barbershoptags-api-directly.md) and [the sheet music viewers](docs/adr/0002-sheet-music-viewers.md).
-
-## Credits
-
-Every Tag, with its sheet music and details, comes from [barbershoptags.com](https://www.barbershoptags.com), the barbershop community's tag library. Tagaholic reads it through the site's public API, identifying itself as `client=Tagaholic`, and shows it as published. Tagaholic isn't affiliated with barbershoptags.com.
